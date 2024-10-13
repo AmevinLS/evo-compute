@@ -1,8 +1,12 @@
 #include "types.cpp"
 
+enum heuristic_t { RANDOM };
+
 solution_t solve(const tsp_t &tsp, heuristic_t heuristic) {
-  solution_t solution;
-  solution.cost = 0;
-  solution.path = std::vector<unsigned int>(tsp.n, 0);
-  return solution;
+  switch (heuristic) {
+  case RANDOM:
+    return solution_t();
+  }
+
+  return solution_t();
 }

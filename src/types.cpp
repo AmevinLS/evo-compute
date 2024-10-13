@@ -36,4 +36,9 @@ struct tsp_t {
 struct solution_t {
   int cost;
   std::vector<unsigned int> path;
+
+  solution_t() : cost(0), path() {}
+
+  solution_t(int cost, std::vector<unsigned int> path)
+      : cost(cost), path(path) {}
 };

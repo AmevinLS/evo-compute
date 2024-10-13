@@ -5,10 +5,9 @@
 
 #include "parse.cpp"
 #include "print.cpp"
+#include "solve.cpp"
 
 #define ERROR "\033[0;31m[ERROR]\033[0m"
-
-enum heuristic_t { RANDOM };
 
 std::optional<std::ifstream> open_file(const std::string &fname) {
   std::ifstream in(fname);
@@ -118,12 +117,9 @@ int solve_main(int argc, char **argv) {
   }
 
   tsp_t tsp = parse(in.value());
+  solution_t solution = solve(tsp, heuristic);
 
-  switch (heuristic) {
-  case RANDOM:
-    std::cout << "Random heuristic" << std::endl;
-    break;
-  }
+  std::cout << solution << std::endl;
 
   return 0;
 }
