@@ -28,10 +28,12 @@ std::vector<solution_t> solve_random(const tsp_t &tsp) {
     std::vector<unsigned int> path;
 
     for (unsigned int i = 0; i < n - 1; i++) {
-      cost += tsp.adj_matrix(indices[i], indices[i + 1]);
+      cost += tsp.adj_matrix(indices[i], indices[i + 1]) +
+              tsp.nodes[indices[i + 1]].weight;
       path.push_back(indices[i]);
     }
-    cost += tsp.adj_matrix(indices[n - 1], indices[0]);
+    cost += tsp.adj_matrix(indices[n - 1], indices[0]) +
+            tsp.nodes[indices[0]].weight;
     path.push_back(indices[n - 1]);
 
     if (seen.find(path) != seen.end()) {
@@ -45,4 +47,3 @@ std::vector<solution_t> solve_random(const tsp_t &tsp) {
 
   return solutions;
 }
-
