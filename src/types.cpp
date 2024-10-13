@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 
 struct node_t {
@@ -9,13 +10,18 @@ struct node_t {
 typedef std::vector<int> adj_list_t;
 
 struct adj_matrix_t {
-  std::vector<std::vector<int>> m;
+  using matrix_t = std::vector<adj_list_t>;
+  matrix_t m;
 
-  adj_matrix_t(unsigned int n) : m(n, std::vector<int>(n, 0)) {}
+  adj_matrix_t(unsigned int n) : m(n, adj_list_t(n, 0)) {}
 
   int &operator()(unsigned int i, unsigned int j) { return m.at(i).at(j); }
+  adj_list_t &operator[](unsigned int i) { return m.at(i); }
 
-  adj_list_t operator[](unsigned int i) { return adj_list_t(m.at(i)); }
+  matrix_t::iterator begin() { return m.begin(); }
+  matrix_t::iterator end() { return m.end(); }
+  matrix_t::const_iterator begin() const { return m.begin(); }
+  matrix_t::const_iterator end() const { return m.end(); }
 };
 
 struct tsp_t {
