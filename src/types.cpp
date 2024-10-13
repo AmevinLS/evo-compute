@@ -16,7 +16,10 @@ struct adj_matrix_t {
   adj_matrix_t(unsigned int n) : m(n, adj_list_t(n, 0)) {}
 
   int &operator()(unsigned int i, unsigned int j) { return m.at(i).at(j); }
+  int operator()(unsigned int i, unsigned int j) const { return m.at(i).at(j); }
+
   adj_list_t &operator[](unsigned int i) { return m.at(i); }
+  adj_list_t operator[](unsigned int i) const { return m.at(i); }
 
   matrix_t::iterator begin() { return m.begin(); }
   matrix_t::iterator end() { return m.end(); }
