@@ -79,8 +79,10 @@ int solve_main(int argc, char **argv) {
   if (strcmp(argv[2], "--help") == 0) {
     std::cout << "usage: " << argv[0] << " solve <file> [options]" << std::endl;
     std::cout << "options:" << std::endl;
-    std::cout << "\t--heuristic string\tHeuristic to use (\"random\") (default "
-                 "\"random\")"
+    std::cout << "\t--heuristic string\tHeuristic to use ("
+                 "\"random\", "
+                 "\"nn_end\""
+                 ") (default \"random\")"
               << std::endl;
     return 0;
   }
@@ -98,6 +100,8 @@ int solve_main(int argc, char **argv) {
 
       if (strcmp(argv[i + 1], "random") == 0) {
         heuristic = RANDOM;
+      } else if (strcmp(argv[i + 1], "nn_end") == 0) {
+        heuristic = NN_END;
       } else {
         std::cerr << ERROR << " unknown heuristic: " << argv[i + 1]
                   << std::endl;
@@ -128,6 +132,12 @@ int solve_main(int argc, char **argv) {
   auto best = std::min_element(
       solutions.begin(), solutions.end(),
       [](solution_t a, solution_t b) { return a.cost < b.cost; });
+
+  if (best == solutions.end()) {
+    std::cerr << ERROR << " failed to find best solution" << std::endl;
+    return 1;
+  }
+
   std::cout << "Best solution:" << std::endl;
   std::cout << *best << std::endl;
 
