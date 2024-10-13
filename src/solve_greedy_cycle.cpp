@@ -51,8 +51,8 @@ solution_t run_greedy_cycle(const tsp_t &tsp, unsigned int starting_node) {
     remaining_nodes.erase(node);
   }
 
+  // Select the remaining nodes using GreedyCycle
   int cost = best_cost.value();
-
   while (nodes.size() != num_nodes_needed) {
     std::optional<int> selected_node, min_diff, best_pos;
     for (int node : remaining_nodes) {
@@ -65,7 +65,7 @@ solution_t run_greedy_cycle(const tsp_t &tsp, unsigned int starting_node) {
         }
       }
     }
-    nodes.insert(nodes.begin() + best_pos.value(), selected_node.value());
+    nodes.insert(nodes.begin() + best_pos.value() + 1, selected_node.value());
     cost += min_diff.value();
     remaining_nodes.erase(selected_node.value());
   }
