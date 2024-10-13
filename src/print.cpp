@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ostream>
+#include <vector>
 
 #include "types.cpp"
 
@@ -29,5 +30,16 @@ std::ostream &operator<<(std::ostream &os, std::vector<node_t> nodes) {
   for (const node_t &node : nodes) {
     os << i++ << node << std::endl;
   }
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, solution_t solution) {
+  os << "Cost: " << solution.cost << std::endl;
+  os << "Path: " << std::endl;
+
+  for (const unsigned int &node : solution.path) {
+    os << node + 1 << std::endl;
+  }
+
   return os;
 }
