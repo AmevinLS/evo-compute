@@ -117,9 +117,10 @@ int solve_main(int argc, char **argv) {
   }
 
   tsp_t tsp = parse(in.value());
-  solution_t solution = solve(tsp, heuristic);
+  std::vector solutions = solve(tsp, heuristic);
 
-  std::cout << solution << std::endl;
+  std::cout << "Solutions:" << std::endl;
+  std::cout << solutions << std::endl;
 
   return 0;
 }

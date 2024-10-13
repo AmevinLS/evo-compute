@@ -35,11 +35,18 @@ std::ostream &operator<<(std::ostream &os, std::vector<node_t> nodes) {
 
 std::ostream &operator<<(std::ostream &os, solution_t solution) {
   os << "Cost: " << solution.cost << std::endl;
-  os << "Path: " << std::endl;
+  os << "Path: ";
 
   for (const unsigned int &node : solution.path) {
     os << node + 1 << std::endl;
   }
 
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, std::vector<solution_t> solutions) {
+  for (const solution_t &solution : solutions) {
+    os << solution << std::endl;
+  }
   return os;
 }
