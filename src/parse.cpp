@@ -19,7 +19,7 @@ adj_matrix_t matrixof(const std::vector<node_t> nodes) {
         continue;
       }
 
-      matrix[i][j] = l2(nodes[i], nodes[j]) + nodes[j].weight;
+      matrix[i][j] = l2(nodes[i], nodes[j]); // + nodes[j].weight;
     }
   }
 
