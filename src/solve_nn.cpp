@@ -53,8 +53,8 @@ solution_t solve_nn_any(const tsp_t &tsp,
     unsigned int min = find_nn(tsp, indices, solution);
     solution.cost += tsp.nodes[min].weight;
 
-    int cost_best = solution.cost + tsp.adj_matrix(solution.path.back(), min);
-    int idx = -1;
+    int cost_best = solution.cost + tsp.adj_matrix(min, solution.path.front());
+    int idx = 0;
 
     for (int i = 0; i < solution.path.size() - 1; i++) {
       unsigned int a = solution.path[i];
@@ -64,17 +64,22 @@ solution_t solve_nn_any(const tsp_t &tsp,
                      tsp.adj_matrix(a, min) + tsp.adj_matrix(min, b);
       if (cost_new < cost_best) {
         cost_best = cost_new;
-        idx = i;
+        idx = i + 1;
       }
     }
 
-    if (idx != -1) {
-      solution.path.insert(solution.path.begin() + idx, min);
-    } else {
+    int cost_new = solution.cost + tsp.adj_matrix(solution.path.back(), min);
+
+    if (cost_new < cost_best) {
       solution.path.push_back(min);
+      solution.cost = cost_new;
+    } else {
+      solution.path.insert(solution.path.begin() + idx, min);
+      solution.cost = cost_best;
     }
-    solution.cost = cost_best;
+
   } while (solution.path.size() < indices.size());
+  solution.cost += tsp.adj_matrix(solution.path.back(), solution.path.front());
 
   return solution;
 }
