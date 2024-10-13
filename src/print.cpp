@@ -1,8 +1,8 @@
+#include "types.cpp"
+
 #include <iostream>
 #include <ostream>
 #include <vector>
-
-#include "types.cpp"
 
 std::ostream &operator<<(std::ostream &os, adj_list_t list) {
   int i = 1;
@@ -38,15 +38,18 @@ std::ostream &operator<<(std::ostream &os, solution_t solution) {
   os << "Path: ";
 
   for (const unsigned int &node : solution.path) {
-    os << node + 1 << std::endl;
+    os << node + 1 << " ";
   }
+
+  os << std::endl;
 
   return os;
 }
 
 std::ostream &operator<<(std::ostream &os, std::vector<solution_t> solutions) {
+  int i = 1;
   for (const solution_t &solution : solutions) {
-    os << solution << std::endl;
+    os << "Solution " << i++ << ":" << std::endl << solution << std::endl;
   }
   return os;
 }

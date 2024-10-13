@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -121,6 +122,14 @@ int solve_main(int argc, char **argv) {
 
   std::cout << "Solutions:" << std::endl;
   std::cout << solutions << std::endl;
+  std::cout << std::endl
+            << std::endl
+            << "Found " << solutions.size() << " solutions" << std::endl;
+  auto best = std::min_element(
+      solutions.begin(), solutions.end(),
+      [](solution_t a, solution_t b) { return a.cost < b.cost; });
+  std::cout << "Best solution:" << std::endl;
+  std::cout << *best << std::endl;
 
   return 0;
 }
