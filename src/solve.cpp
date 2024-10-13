@@ -7,7 +7,7 @@
 #include <numeric>
 #include <vector>
 
-enum heuristic_t { RANDOM, NN_END };
+enum heuristic_t { RANDOM, NN_END, NN_ANY };
 
 std::vector<unsigned int> constrain(const tsp_t &tsp, unsigned int start) {
   int n = ceil(tsp.n / 2);
@@ -39,6 +39,10 @@ std::vector<solution_t> solve(const tsp_t &tsp, heuristic_t heuristic) {
       break;
     case NN_END:
       solutions.push_back(solve_nn_end(tsp, indices));
+      break;
+    case NN_ANY:
+      solutions.push_back(solve_nn_any(tsp, indices));
+      break;
     }
   }
 

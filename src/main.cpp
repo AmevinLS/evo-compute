@@ -81,7 +81,8 @@ int solve_main(int argc, char **argv) {
     std::cout << "options:" << std::endl;
     std::cout << "\t--heuristic string\tHeuristic to use ("
                  "\"random\", "
-                 "\"nn_end\""
+                 "\"nn_end\", "
+                 "\"nn_any\""
                  ") (default \"random\")"
               << std::endl;
     return 0;
@@ -102,6 +103,8 @@ int solve_main(int argc, char **argv) {
         heuristic = RANDOM;
       } else if (strcmp(argv[i + 1], "nn_end") == 0) {
         heuristic = NN_END;
+      } else if (strcmp(argv[i + 1], "nn_any") == 0) {
+        heuristic = NN_ANY;
       } else {
         std::cerr << ERROR << " unknown heuristic: " << argv[i + 1]
                   << std::endl;
