@@ -32,3 +32,8 @@ struct tsp_t {
   tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
       : n(nodes.size()), nodes(nodes), adj_matrix(adj_matrix) {}
 };
+
+struct solution_t {
+  int cost;
+  std::vector<unsigned int> path;
+};
