@@ -22,4 +22,7 @@ struct tsp_t {
   unsigned int n;
   std::vector<node_t> nodes;
   adj_matrix_t adj_matrix;
+
+  tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
+      : n(nodes.size()), nodes(nodes), adj_matrix(adj_matrix) {}
 };
