@@ -68,9 +68,9 @@ solution_t solve_nn_any(const tsp_t &tsp, unsigned int n, unsigned int start) {
       }
     }
 
-    int dist = tsp.adj_matrix(solution.path.back(), min);
+    auto [last_min, dist] = find_nn(tsp, solution, solution.path.back());
     if (dist < min_dist) {
-      solution.path.push_back(min);
+      solution.path.push_back(last_min);
       min_dist = dist;
     } else {
       solution.path.insert(solution.path.begin() + idx + 1, min);
