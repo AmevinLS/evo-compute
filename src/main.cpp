@@ -3,6 +3,7 @@
 #include <iostream>
 #include <optional>
 #include <ostream>
+#include <string>
 
 #include "parse.cpp"
 #include "print.cpp"
@@ -82,7 +83,8 @@ int solve_main(int argc, char **argv) {
     std::cout << "\t--heuristic string\tHeuristic to use ("
                  "\"random\", "
                  "\"nn_end\", "
-                 "\"nn_any\""
+                 "\"nn_any\", "
+                 "\"greedy_cycle\""
                  ") (default \"random\")"
               << std::endl;
     return 0;
@@ -99,13 +101,16 @@ int solve_main(int argc, char **argv) {
         return 1;
       }
 
-      if (strcmp(argv[i + 1], "random") == 0) {
-        heuristic = RANDOM;
-      } else if (strcmp(argv[i + 1], "nn_end") == 0) {
-        heuristic = NN_END;
-      } else if (strcmp(argv[i + 1], "nn_any") == 0) {
-        heuristic = NN_ANY;
-      } else {
+      bool heuristic_flag = false;
+      for (auto &[key, value] : heuristic_t_str) {
+        if (value == argv[i + 1]) {
+          heuristic = key;
+          heuristic_flag = true;
+          break;
+        }
+      }
+
+      if (!heuristic_flag) {
         std::cerr << ERROR << " unknown heuristic: " << argv[i + 1]
                   << std::endl;
         return 1;
@@ -147,6 +152,38 @@ int solve_main(int argc, char **argv) {
   return 0;
 }
 
+int experiment_main(int argc, char **argv) {
+  if (argc < 3) {
+    std::cerr << ERROR << " usage: " << argv[0] << " experiment <file>"
+              << std::endl;
+    return 1;
+  }
+
+  if (strcmp(argv[2], "--help") == 0) {
+    std::cout << "usage: " << argv[0] << " experiment <file>" << std::endl;
+    return 0;
+  }
+
+  std::string fname = argv[2];
+  auto in = open_file(fname);
+
+  if (!in.has_value()) {
+    return 1;
+  }
+
+  tsp_t tsp = parse(in.value());
+  std::string instance_name = fname.substr(fname.find_last_of("/\\") + 1);
+  instance_name = instance_name.substr(0, instance_name.find_last_of("."));
+
+  for (auto &[key, value] : heuristic_t_str) {
+    std::vector solutions = solve(tsp, key);
+    std::ofstream out(instance_name + "_" + value + ".csv");
+
+    out << solutions;
+  }
+  return 0;
+}
+
 int main(int argc, char **argv) {
   if (argc == 1 || (argc == 2 && strcmp(argv[1], "--help") == 0)) {
     std::cout << "usage " << argv[0] << " <command> [args]" << std::endl
@@ -157,6 +194,7 @@ int main(int argc, char **argv) {
     std::cout << "\tparse\t\tParse the data file and print it to STDOUT"
               << std::endl;
     std::cout << "\tsolve\t\tSolve the TSP problem" << std::endl;
+    std::cout << "\texperiment\t\tRun all methods on the instance" << std::endl;
     return 0;
   }
 
@@ -171,6 +209,10 @@ int main(int argc, char **argv) {
 
   if (strcmp(argv[1], "solve") == 0) {
     return solve_main(argc, argv);
+  }
+
+  if (strcmp(argv[1], "experiment") == 0) {
+    return experiment_main(argc, argv);
   }
 
   std::cerr << ERROR << " unknown command: " << argv[1] << std::endl;
