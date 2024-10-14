@@ -1,8 +1,6 @@
 #include "types.cpp"
 #include <algorithm>
 #include <climits>
-#include <iostream>
-#include <ostream>
 #include <vector>
 
 std::pair<unsigned int, int>
@@ -49,22 +47,27 @@ solution_t solve_nn_any(const tsp_t &tsp, unsigned int n, unsigned int start) {
   solution_t solution(tsp.nodes[start].weight, {start});
 
   do {
-    unsigned int min = solution.path.back();
-    unsigned int idx = -1;
-    int min_dist = INT_MAX;
+    auto [min, min_dist] = find_nn(tsp, solution, solution.path.front());
+    unsigned int idx = 0;
 
     for (int i = 0; i < solution.path.size() - 1; i++) {
       unsigned int a = solution.path[i];
       unsigned int b = solution.path[i + 1];
 
-      auto [a_min, dist] = find_nn(tsp, solution, a);
+      for (int j = 0; j < tsp.n; j++) {
+        if (j == a || j == b ||
+            std::find(solution.path.begin(), solution.path.end(), j) !=
+                solution.path.end()) {
 
-      dist += tsp.adj_matrix(a_min, b) - tsp.adj_matrix(a, b);
-
-      if (dist) {
-        min = a_min;
-        min_dist = dist;
-        idx = i;
+          continue;
+        }
+        int dist = tsp.nodes[j].weight + tsp.adj_matrix(a, j) +
+                   tsp.adj_matrix(j, b) - tsp.adj_matrix(a, b);
+        if (dist < min_dist) {
+          min = j;
+          min_dist = dist;
+          idx = i + 1;
+        }
       }
     }
 
@@ -73,7 +76,7 @@ solution_t solve_nn_any(const tsp_t &tsp, unsigned int n, unsigned int start) {
       solution.path.push_back(last_min);
       min_dist = dist;
     } else {
-      solution.path.insert(solution.path.begin() + idx + 1, min);
+      solution.path.insert(solution.path.begin() + idx, min);
     }
 
     solution.cost += min_dist;
