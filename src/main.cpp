@@ -154,17 +154,43 @@ int solve_main(int argc, char **argv) {
 
 int experiment_main(int argc, char **argv) {
   if (argc < 3) {
-    std::cerr << ERROR << " usage: " << argv[0] << " experiment <file>"
-              << std::endl;
+    std::cerr << ERROR << " usage: " << argv[0]
+              << " experiment <file> [options]" << std::endl;
     return 1;
   }
 
   if (strcmp(argv[2], "--help") == 0) {
     std::cout << "usage: " << argv[0] << " experiment <file>" << std::endl;
+    std::cout << "options:" << std::endl;
+    std::cout << "\t-o, --output string\tOutput directory (default ./results/)"
+              << std::endl;
     return 0;
   }
 
   std::string fname = argv[2];
+  std::string output_dir = "./results/";
+
+  int i = 2;
+  while (++i < argc) {
+    if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
+      if (i + 1 >= argc) {
+        std::cerr << ERROR << " missing argument for --output" << std::endl;
+        return 1;
+      }
+
+      std::string output_dir = argv[i + 1];
+      if (output_dir.back() != '/') {
+        output_dir += '/';
+      }
+
+      i++;
+      continue;
+    }
+
+    std::cerr << ERROR << " unknown option: " << argv[i] << std::endl;
+    return 1;
+  }
+
   auto in = open_file(fname);
 
   if (!in.has_value()) {
@@ -174,6 +200,7 @@ int experiment_main(int argc, char **argv) {
   tsp_t tsp = parse(in.value());
   std::string instance_name = fname.substr(fname.find_last_of("/\\") + 1);
   instance_name = instance_name.substr(0, instance_name.find_last_of("."));
+  instance_name = output_dir + instance_name;
 
   for (auto &[key, value] : heuristic_t_str) {
     std::vector solutions = solve(tsp, key);
