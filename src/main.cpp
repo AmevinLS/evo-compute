@@ -64,9 +64,16 @@ int main() {
   std::ifstream fin("../data/TSPA.csv");
   tsp_t tspA = parse(fin);
 
+  fin = std::ifstream("../data/TSPB.csv");
+  tsp_t tspB = parse(fin);
+
   for (auto heuristic : {RANDOM, GREEDY_CYCLE}) {
     auto solutions = run_experiments(tspA, heuristic);
     solutions_to_csv(solutions,
                      "../results/tspa_" + heuristic_to_str(heuristic) + ".csv");
+
+    solutions = run_experiments(tspB, heuristic);
+    solutions_to_csv(solutions,
+                     "../results/tspb_" + heuristic_to_str(heuristic) + ".csv");
   }
 }
