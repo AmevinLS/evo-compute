@@ -1,4 +1,4 @@
-#include "types.cpp"
+#include "../common/types.cpp"
 #include <algorithm>
 #include <climits>
 #include <vector>

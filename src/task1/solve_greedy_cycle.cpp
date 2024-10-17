@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.cpp"
+#include "../common/types.cpp"
 #include <climits>
 #include <set>
 #include <vector>

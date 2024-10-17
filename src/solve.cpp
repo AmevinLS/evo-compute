@@ -1,7 +1,7 @@
-#include "solve_greedy_cycle.cpp"
-#include "solve_nn.cpp"
-#include "solve_random.cpp"
-#include "types.cpp"
+#include "common/types.cpp"
+#include "task1/solve_greedy_cycle.cpp"
+#include "task1/solve_nn.cpp"
+#include "task1/solve_random.cpp"
 
 #include <map>
 #include <vector>
