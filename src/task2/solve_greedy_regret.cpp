@@ -4,6 +4,7 @@
 #include <climits>
 #include <numeric>
 #include <set>
+#include <stdexcept>
 
 #include "../common/types.cpp"
 #include "../task1/solve_greedy_cycle.cpp"
@@ -60,7 +61,11 @@ class CycleRegretSolver {
   public:
     CycleRegretSolver(const tsp_t &tsp) : tsp(tsp) { reset(); }
 
-    solution_t solve(unsigned n, unsigned start, unsigned regret_k) {
+    solution_t solve(unsigned n, unsigned start, unsigned regret_k,
+                     float regret_weight) {
+        if (regret_weight < 0.0 || regret_weight > 1.0)
+            throw std::invalid_argument("regret_k must be between 0 and 1");
+
         reset();
 
         add_starting_cycle(start);
@@ -69,7 +74,7 @@ class CycleRegretSolver {
         std::vector<std::pair<unsigned, int>> cost_diffs;
         cost_diffs.reserve(tsp.n);
         while (solution.path.size() < n) {
-            int max_regret = INT_MIN;
+            int max_score = INT_MIN;
             unsigned best_pos = 0;
             unsigned best_node = 0;
             for (unsigned node : remaining_nodes) {
@@ -88,8 +93,10 @@ class CycleRegretSolver {
                                   const std::pair<unsigned, int> &pair) {
                                   regret += pair.second - cost_diffs[0].second;
                               });
-                if (regret > max_regret) {
-                    max_regret = regret;
+                int score = regret_weight * regret -
+                            (1 - regret_weight) * cost_diffs[0].second;
+                if (regret > max_score) {
+                    max_score = score;
                     best_node = node;
                     best_pos = cost_diffs[0].first;
                 }
