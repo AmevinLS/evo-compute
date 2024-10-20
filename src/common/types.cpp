@@ -1,4 +1,6 @@
 #pragma once
+
+#include <set>
 #include <vector>
 
 struct node_t {
@@ -29,11 +31,15 @@ struct adj_matrix_t {
 
 struct tsp_t {
   unsigned int n;
-  std::vector<node_t> nodes;
+  std::vector<int> weights;
   adj_matrix_t adj_matrix;
 
   tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
-      : n(nodes.size()), nodes(nodes), adj_matrix(adj_matrix) {}
+      : n(nodes.size()), weights(), adj_matrix(adj_matrix) {
+    for (auto &node : nodes) {
+      weights.push_back(node.weight);
+    }
+  }
 };
 
 struct solution_t {
