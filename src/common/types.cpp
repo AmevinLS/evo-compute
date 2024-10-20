@@ -1,4 +1,6 @@
 #pragma once
+
+#include <set>
 #include <vector>
 
 struct node_t {
@@ -29,19 +31,75 @@ struct adj_matrix_t {
 
 struct tsp_t {
   unsigned int n;
-  std::vector<node_t> nodes;
+  std::vector<int> weights;
   adj_matrix_t adj_matrix;
 
   tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
-      : n(nodes.size()), nodes(nodes), adj_matrix(adj_matrix) {}
+      : n(nodes.size()), weights(), adj_matrix(adj_matrix) {
+    for (auto &node : nodes) {
+      weights.push_back(node.weight);
+    }
+  }
 };
 
 struct solution_t {
   int cost;
   std::vector<unsigned int> path;
+  std::set<unsigned int> remaining_nodes;
+  const tsp_t *tsp;
 
-  solution_t() : cost(0), path() {}
+  solution_t(const tsp_t &tsp, std::vector<unsigned int> path)
+      : cost(0), path(path), remaining_nodes(), tsp(&tsp) {
+    for (unsigned int i = 0; i < tsp.n; i++) {
+      remaining_nodes.insert(i);
+    }
 
-  solution_t(int cost, std::vector<unsigned int> path)
-      : cost(cost), path(path) {}
+    for (unsigned int i = 0; i < path.size() - 1; i++) {
+      cost += tsp.adj_matrix(path[i], path[i + 1]) + tsp.weights[path[i]];
+      remaining_nodes.erase(path[i]);
+    }
+
+    remaining_nodes.erase(path.back());
+
+    cost +=
+        tsp.adj_matrix(path.back(), path.front()) + tsp.weights[path.back()];
+  }
+
+  solution_t(const tsp_t &tsp, unsigned int start)
+      : cost(tsp.weights[start]), path({start}), remaining_nodes(), tsp(&tsp) {
+    for (unsigned int i = 0; i < tsp.n; i++) {
+      if (i == start) {
+        continue;
+      }
+
+      remaining_nodes.insert(i);
+    }
+  }
+
+  void append(unsigned int node) {
+    cost += tsp->adj_matrix(path.back(), node) + tsp->weights[node];
+    path.push_back(node);
+    remaining_nodes.erase(node);
+  }
+
+  void prepend(unsigned int node) {
+    cost += tsp->adj_matrix(node, path.front()) + tsp->weights[node];
+    path.insert(path.begin(), node);
+    remaining_nodes.erase(node);
+  }
+
+  void insert(unsigned int node, int pos) {
+    cost += get_cost_diff(node, pos);
+    path.insert(path.begin() + pos + 1, node);
+    remaining_nodes.erase(node);
+  }
+
+  void commit() { cost += tsp->adj_matrix(path.back(), path.front()); }
+
+  int get_cost_diff(unsigned int node, int pos) const {
+    unsigned int a = path[pos];
+    unsigned int b = path[(pos + 1) % path.size()];
+    return tsp->weights[node] + tsp->adj_matrix(a, node) +
+           tsp->adj_matrix(node, b) - tsp->adj_matrix(a, b);
+  }
 };
