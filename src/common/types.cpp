@@ -49,18 +49,20 @@ struct solution_t {
   const tsp_t *tsp;
 
   solution_t(const tsp_t &tsp, std::vector<unsigned int> path)
-      : cost(tsp.weights[path.front()]), path(path), remaining_nodes(),
-        tsp(&tsp) {
+      : cost(0), path(path), remaining_nodes(), tsp(&tsp) {
     for (unsigned int i = 0; i < tsp.n; i++) {
       remaining_nodes.insert(i);
     }
 
-    for (unsigned int i = 1; i < path.size(); i++) {
-      cost += tsp.adj_matrix(path[i - 1], path[i]) + tsp.weights[path[i]];
+    for (unsigned int i = 0; i < path.size() - 1; i++) {
+      cost += tsp.adj_matrix(path[i], path[i + 1]) + tsp.weights[path[i]];
       remaining_nodes.erase(path[i]);
     }
 
-    cost += tsp.adj_matrix(path.back(), path.front());
+    remaining_nodes.erase(path.back());
+
+    cost +=
+        tsp.adj_matrix(path.back(), path.front()) + tsp.weights[path.back()];
   }
 
   solution_t(const tsp_t &tsp, unsigned int start)
