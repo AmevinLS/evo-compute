@@ -61,7 +61,7 @@ class CycleRegretSolver {
   public:
     CycleRegretSolver(const tsp_t &tsp) : tsp(tsp) { reset(); }
 
-    solution_t solve(unsigned n, unsigned start, unsigned regret_k,
+    solution_t solve(unsigned n, unsigned start, std::size_t regret_k,
                      float regret_weight) {
         if (regret_weight < 0.0 || regret_weight > 1.0)
             throw std::invalid_argument("regret_k must be between 0 and 1");
@@ -88,14 +88,13 @@ class CycleRegretSolver {
                               return pair1.second < pair2.second;
                           });
                 int regret = 0;
-                std::for_each(cost_diffs.begin(), cost_diffs.begin() + regret_k,
-                              [&regret, cost_diffs](
-                                  const std::pair<unsigned, int> &pair) {
-                                  regret += pair.second - cost_diffs[0].second;
-                              });
+                for (std::size_t i = 0;
+                     i < std::min(regret_k, cost_diffs.size()); i++) {
+                    regret += cost_diffs[i].second - cost_diffs[0].second;
+                }
                 int score = regret_weight * regret -
                             (1 - regret_weight) * cost_diffs[0].second;
-                if (regret > max_score) {
+                if (score > max_score) {
                     max_score = score;
                     best_node = node;
                     best_pos = cost_diffs[0].first;
