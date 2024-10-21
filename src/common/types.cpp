@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <set>
 #include <vector>
 
@@ -95,6 +96,59 @@ struct solution_t {
         cost += get_cost_diff(node, pos);
         path.insert(path.begin() + pos + 1, node);
         remaining_nodes.erase(node);
+    }
+
+    void swap_nodes(unsigned idx1, unsigned idx2) {
+        unsigned node1 = path[idx1];
+        unsigned node2 = path[idx2];
+        cost -= tsp->adj_matrix(path[shift_idx(idx1, -1)], node1) +
+                tsp->adj_matrix(node1, path[shift_idx(idx1, 1)]) +
+                tsp->adj_matrix(path[shift_idx(idx2, -1)], node2) +
+                tsp->adj_matrix(node2, path[shift_idx(idx2, 1)]);
+        cost += tsp->adj_matrix(path[shift_idx(idx1, -1)], node2) +
+                tsp->adj_matrix(node2, path[shift_idx(idx1, 1)]) +
+                tsp->adj_matrix(path[shift_idx(idx2, -1)], node1) +
+                tsp->adj_matrix(node1, path[shift_idx(idx2, 1)]);
+
+        path[idx1] = node2;
+        path[idx2] = node1;
+    }
+
+    void swap_edges(unsigned pos1, unsigned pos2) {
+        if (pos1 > pos2) {
+            std::swap(pos1, pos2);
+        }
+        if (pos1 > pos2)
+            std::reverse(path.begin() + pos1 + 1, path.begin() + pos2 + 1);
+    }
+
+    void replace_node(unsigned idx, unsigned new_node) {
+        // TODO: check if new_node already in path?
+        unsigned old_node = path[idx];
+        cost -= tsp->adj_matrix(path[shift_idx(idx, -1)], old_node) +
+                tsp->adj_matrix(old_node, path[shift_idx(idx, 1)]);
+        cost += tsp->adj_matrix(path[shift_idx(idx, -1)], new_node) +
+                tsp->adj_matrix(new_node, path[shift_idx(idx, 1)]);
+        path[idx] = new_node;
+    }
+
+    unsigned shift_idx(unsigned idx, int steps) {
+        if (steps == 0)
+            return idx;
+
+        unsigned pre_remainder;
+        if (steps < 0)
+            pre_remainder = idx;
+        else
+            pre_remainder = path.size() - idx;
+
+        unsigned post_remainder = steps % path.size();
+        unsigned result_idx;
+        if (steps < 0)
+            result_idx = post_remainder;
+        else
+            result_idx = path.size() - post_remainder;
+        return result_idx;
     }
 
     void commit() { cost += tsp->adj_matrix(path.back(), path.front()); }
