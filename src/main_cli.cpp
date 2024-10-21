@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -21,6 +22,33 @@ std::optional<std::ifstream> open_file(const std::string &fname) {
     return {};
   }
   return in;
+}
+
+int experiment(const std::string &fname, const std::string &output_dir) {
+  auto in = open_file(fname);
+
+  if (!in.has_value()) {
+    return 1;
+  }
+
+  tsp_t tsp = parse(in.value());
+  std::string instance_name = fname.substr(fname.find_last_of("/\\") + 1);
+  instance_name = instance_name.substr(0, instance_name.find_last_of("."));
+  instance_name = output_dir + instance_name;
+
+  for (auto &[key, value] : heuristic_t_str) {
+    std::cout << "Running " << value << " heuristic" << std::endl;
+
+    std::vector solutions = solve(tsp, key);
+    std::string path = instance_name + "_" + value + ".csv";
+    std::ofstream out(path);
+
+    out << solutions;
+
+    std::cout << "Results saved to " << path << std::endl;
+  }
+
+  return 0;
 }
 
 int parse_main(int argc, char **argv) {
@@ -197,29 +225,22 @@ int experiment_main(int argc, char **argv) {
     return 1;
   }
 
-  auto in = open_file(fname);
+  if (std::filesystem::is_directory(fname)) {
+    for (const auto &entry : std::filesystem::directory_iterator(fname)) {
+      if (!entry.is_regular_file()) {
+        continue;
+      }
 
-  if (!in.has_value()) {
-    return 1;
+      int result = experiment(entry.path().string(), output_dir);
+      if (result != 0) {
+        return result;
+      }
+    }
+
+    return 0;
   }
 
-  tsp_t tsp = parse(in.value());
-  std::string instance_name = fname.substr(fname.find_last_of("/\\") + 1);
-  instance_name = instance_name.substr(0, instance_name.find_last_of("."));
-  instance_name = output_dir + instance_name;
-
-  for (auto &[key, value] : heuristic_t_str) {
-    std::cout << "Running " << value << " heuristic" << std::endl;
-
-    std::vector solutions = solve(tsp, key);
-    std::string path = instance_name + "_" + value + ".csv";
-    std::ofstream out(path);
-
-    out << solutions;
-
-    std::cout << "Results saved to " << path << std::endl;
-  }
-  return 0;
+  return experiment(fname, output_dir);
 }
 
 int main(int argc, char **argv) {
