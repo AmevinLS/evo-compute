@@ -36,11 +36,11 @@ solution_t solve_regret(const tsp_t &tsp, unsigned int n, unsigned int start,
                           return pair1.second < pair2.second;
                       });
 
-            int regret =
-                std::reduce(costs.begin(), costs.begin() + REGRET_K, 0,
-                            [&](int regret, pos_cost_t pair) {
-                                return regret + pair.second - costs[0].second;
-                            });
+            int regret = std::accumulate(
+                costs.begin(), costs.begin() + REGRET_K, 0,
+                [&](int regret, pos_cost_t pair) {
+                    return regret + pair.second - costs[0].second;
+                });
 
             int score = weight * regret - (1 - weight) * costs[0].second;
 
