@@ -36,7 +36,7 @@ solution_t solve_regret(const tsp_t &tsp, unsigned int n, unsigned int start,
 
             int regret =
                 std::reduce(costs.begin(), costs.begin() + REGRET_K, 0,
-                            [&](int regret, auto pair) {
+                            [&](int regret, std::pair<unsigned, int> pair) {
                                 return regret + pair.second - costs[0].second;
                             });
 
