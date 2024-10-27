@@ -1,135 +1,131 @@
+#include <iostream>
 #include <optional>
 #include <random>
 #include <vector>
 
+#include "../common/print.cpp"
+#include "../common/search.cpp"
 #include "../common/types.cpp"
+#include "../task1/solve_random.cpp"
+#include "../task2/solve_greedy_regret.cpp"
 
-solution_t random_solution(const tsp_t &tsp, unsigned sol_size) {
-    std::vector<unsigned> path(sol_size);
-    for (int i = 0; i < path.size(); i++) {
-        path[i] = i;
+enum search_t { GREEDY, STEEPEST };
+
+std::optional<operation_t>
+greedy_search(const std::vector<operation_t> &operations) {
+    for (operation_t operation : operations) {
+        if (operation.delta < 0) {
+            return operation;
+        }
     }
-    return solution_t(tsp, path);
+
+    return std::nullopt;
 }
 
-enum IntrapathType {
-    INTRA_NODE_SWAP,
-    INTRA_EDGE_SWAP,
-};
-
-struct operation_t {
-    std::function<void(solution_t &)> func;
-    int cost_diff;
-};
-
-// Get all neighbors in an arbitrary order
-std::vector<operation_t> get_all_operations(const solution_t &sol,
-                                            IntrapathType intra_type) {
-    std::set<unsigned> remaining_nodes(sol.path.begin(), sol.path.end());
-    for (unsigned node = 0; node < sol.tsp->n; node++) {
-        remaining_nodes.insert(node);
-    }
-    for (unsigned node : sol.path) {
-        remaining_nodes.erase(node);
-    }
-
-    std::vector<operation_t> operations;
-    operations.reserve(sol.tsp->n * sol.tsp->n);
-    for (int i = 0; i < sol.path.size(); i++) {
-        for (int j = i + 1; j < sol.path.size(); j++) {
-            operation_t operation;
-            int cost_diff;
-            if (intra_type == INTRA_NODE_SWAP) {
-                operation.cost_diff = sol.swap_nodes_cost_diff(i, j);
-                operation.func = [i, j](solution_t &sol) {
-                    sol.swap_nodes(i, j);
-                };
-            } else if (intra_type == INTRA_EDGE_SWAP) {
-                operation.cost_diff = sol.swap_edges_cost_diff(i, j);
-                operation.func = [i, j](solution_t &sol) {
-                    sol.swap_edges(i, j);
-                };
-            }
-            operations.push_back(operation);
-        }
-        // Interpath operation (replace node)
-        for (unsigned new_node : remaining_nodes) {
-            operation_t operation;
-            solution_t new_sol = sol;
-            operation.cost_diff = sol.replace_node_cost_diff(i, new_node);
-            operation.func = [i, new_node](solution_t &sol) {
-                sol.replace_node(i, new_node);
-            };
-            operations.push_back(operation);
+std::optional<operation_t>
+steepest_search(const std::vector<operation_t> &operations) {
+    int best_diff = 0;
+    std::optional<operation_t> best_op;
+    for (operation_t operation : operations) {
+        if (operation.delta < best_diff) {
+            best_op = operation;
+            best_diff = operation.delta;
         }
     }
-    return operations;
+    return best_op;
 }
 
-enum LocalSelectMethod { LOCAL_GREEDY, LOCAL_STEEPEST };
+solution_t solve_local_search(solution_t start, intra_path_t intra_op_type,
+                              search_t search_type) {
+    solution_t cur = start;
+    std::mt19937 g = std::mt19937(std::random_device()());
 
-class LocalSearcher {
-  private:
-    std::optional<unsigned>
-    select_greedy(const std::vector<operation_t> &all_operations,
-                  const std::vector<unsigned> &idxs) {
-        for (unsigned idx : idxs) {
-            if (all_operations[idx].cost_diff < 0) {
-                return idx;
-            }
+    std::cout << cur;
+
+    while (true) {
+        std::vector<operation_t> neighbourhood =
+            find_neighbourhood(cur, intra_op_type);
+        std::shuffle(neighbourhood.begin(), neighbourhood.end(), g);
+
+        std::optional<operation_t> best_op;
+        if (search_type == GREEDY) {
+            best_op = greedy_search(neighbourhood);
+        } else if (search_type == STEEPEST) {
+            best_op = steepest_search(neighbourhood);
         }
-        return std::nullopt;
+
+        if (!best_op.has_value()) {
+            break;
+        }
+        best_op.value().func(cur);
+        std::cout << best_op.value().delta << "\n";
+        // std::cout << "Cost after step: " << cur.cost << "\n";
+        std::cout << cur;
     }
 
-    std::optional<unsigned>
-    select_steepest(const std::vector<operation_t> &all_operations,
-                    const std::vector<unsigned> &idxs) {
-        int best_diff = 0;
-        std::optional<unsigned> best_idx;
-        for (unsigned idx : idxs) {
-            if (all_operations[idx].cost_diff < best_diff) {
-                best_idx = idx;
-                best_diff = all_operations[idx].cost_diff;
-            }
-        }
-        return best_idx;
+    return cur;
+}
+
+solution_t solve_local_search(const tsp_t &tsp, unsigned int n,
+                              unsigned int start, intra_path_t intra_op_type,
+                              search_t search_type) {
+    solution_t solution = solve_regret_weighted(tsp, n, start);
+    return solve_local_search(solution, intra_op_type, search_type);
+}
+
+std::vector<solution_t> solve_local_search(const tsp_t &tsp, unsigned int n,
+                                           intra_path_t intra_op_type,
+                                           search_t search_type) {
+    std::vector<solution_t> solutions = solve_random(tsp, n);
+
+    for (unsigned int i = 0; i < solutions.size(); i++) {
+        solutions[i] =
+            solve_local_search(solutions[i], intra_op_type, search_type);
     }
 
-  public:
-    const tsp_t &tsp;
-    std::random_device rd;
-    std::mt19937 g;
+    return solutions;
+}
 
-    LocalSearcher(const tsp_t &tsp) : tsp(tsp), rd(), g(rd()) {}
+solution_t solve_local_search_gen_greedy_swap(const tsp_t &tsp, unsigned int n,
+                                              unsigned int start) {
 
-    solution_t local_search(const solution_t &curr_sol,
-                            LocalSelectMethod select_method,
-                            IntrapathType intrapath_type) {
-        solution_t best_sol = curr_sol;
-        bool step_made = true;
-        while (step_made) {
-            step_made = false;
-            std::vector all_operations =
-                get_all_operations(curr_sol, intrapath_type);
-            std::vector<unsigned> idxs(all_operations.size());
-            for (unsigned i = 0; i < idxs.size(); i++) {
-                idxs[i] = i;
-            }
-            std::shuffle(idxs.begin(), idxs.end(), g);
+    return solve_local_search(tsp, n, start, SWAP, GREEDY);
+}
 
-            std::optional<unsigned> select_res;
-            if (select_method == LOCAL_GREEDY) {
-                select_res = select_greedy(all_operations, idxs);
-            } else if (select_method == LOCAL_STEEPEST) {
-                select_res = select_steepest(all_operations, idxs);
-            }
+solution_t solve_local_search_gen_greedy_reverse(const tsp_t &tsp,
+                                                 unsigned int n,
+                                                 unsigned int start) {
+    return solve_local_search(tsp, n, start, REVERSE, GREEDY);
+}
 
-            if (select_res.has_value()) {
-                step_made = true;
-                all_operations[select_res.value()].func(best_sol);
-                std::cout << "Cost after step: " << best_sol.cost << "\n";
-            }
-        }
-        return best_sol;
-    }
-};
+solution_t solve_local_search_gen_steepest_swap(const tsp_t &tsp,
+                                                unsigned int n,
+                                                unsigned int start) {
+    return solve_local_search(tsp, n, start, SWAP, STEEPEST);
+}
+
+solution_t solve_local_search_gen_steepest_reverse(const tsp_t &tsp,
+                                                   unsigned int n,
+                                                   unsigned int start) {
+    return solve_local_search(tsp, n, start, REVERSE, STEEPEST);
+}
+
+std::vector<solution_t> solve_local_search_random_greedy_swap(const tsp_t &tsp,
+                                                              unsigned int n) {
+    return solve_local_search(tsp, n, SWAP, GREEDY);
+}
+
+std::vector<solution_t>
+solve_local_search_random_greedy_reverse(const tsp_t &tsp, unsigned int n) {
+    return solve_local_search(tsp, n, REVERSE, GREEDY);
+}
+
+std::vector<solution_t>
+solve_local_search_random_steepest_swap(const tsp_t &tsp, unsigned int n) {
+    return solve_local_search(tsp, n, SWAP, STEEPEST);
+}
+
+std::vector<solution_t>
+solve_local_search_random_steepest_reverse(const tsp_t &tsp, unsigned int n) {
+    return solve_local_search(tsp, n, REVERSE, STEEPEST);
+}
