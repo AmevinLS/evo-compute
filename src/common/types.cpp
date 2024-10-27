@@ -173,12 +173,13 @@ struct solution_t {
         else
             pre_remainder = path.size() - idx;
 
-        unsigned post_remainder = steps % path.size();
+        unsigned post_remainder = (steps - pre_remainder) % path.size();
         unsigned result_idx;
         if (steps < 0)
-            result_idx = post_remainder;
-        else
             result_idx = path.size() - post_remainder;
+        else
+            result_idx = post_remainder;
+
         return result_idx;
     }
 
