@@ -99,17 +99,28 @@ struct solution_t {
     }
 
     int swap_nodes_cost_diff(unsigned idx1, unsigned idx2) const {
+        if (idx1 > idx2) {
+            std::swap(idx1, idx2);
+        }
+
         unsigned node1 = path[idx1];
         unsigned node2 = path[idx2];
         int cost_diff = 0;
-        cost_diff -= tsp->adj_matrix(path[shift_idx(idx1, -1)], node1) +
-                     tsp->adj_matrix(node1, path[shift_idx(idx1, 1)]) +
-                     tsp->adj_matrix(path[shift_idx(idx2, -1)], node2) +
-                     tsp->adj_matrix(node2, path[shift_idx(idx2, 1)]);
-        cost_diff += tsp->adj_matrix(path[shift_idx(idx1, -1)], node2) +
-                     tsp->adj_matrix(node2, path[shift_idx(idx1, 1)]) +
-                     tsp->adj_matrix(path[shift_idx(idx2, -1)], node1) +
-                     tsp->adj_matrix(node1, path[shift_idx(idx2, 1)]);
+        if (idx1 + 1 == idx2) {
+            cost_diff -= tsp->adj_matrix(path[shift_idx(idx1, -1)], node1) +
+                         tsp->adj_matrix(node2, path[shift_idx(idx2, 1)]);
+            cost_diff += tsp->adj_matrix(path[shift_idx(idx1, -1)], node2) +
+                         tsp->adj_matrix(node1, path[shift_idx(idx2, 1)]);
+        } else {
+            cost_diff -= tsp->adj_matrix(path[shift_idx(idx1, -1)], node1) +
+                         tsp->adj_matrix(node1, path[shift_idx(idx1, 1)]) +
+                         tsp->adj_matrix(path[shift_idx(idx2, -1)], node2) +
+                         tsp->adj_matrix(node2, path[shift_idx(idx2, 1)]);
+            cost_diff += tsp->adj_matrix(path[shift_idx(idx1, -1)], node2) +
+                         tsp->adj_matrix(node2, path[shift_idx(idx1, 1)]) +
+                         tsp->adj_matrix(path[shift_idx(idx2, -1)], node1) +
+                         tsp->adj_matrix(node1, path[shift_idx(idx2, 1)]);
+        }
         return cost_diff;
     }
 
@@ -132,8 +143,7 @@ struct solution_t {
             std::swap(pos1, pos2);
         }
         cost += swap_edges_cost_diff(pos1, pos2);
-        if (pos1 > pos2)
-            std::reverse(path.begin() + pos1 + 1, path.begin() + pos2 + 1);
+        std::reverse(path.begin() + pos1 + 1, path.begin() + pos2 + 1);
     }
 
     int replace_node_cost_diff(unsigned idx, unsigned new_node) const {
