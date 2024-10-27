@@ -3,22 +3,20 @@
 #include "types.cpp"
 
 #include <climits>
+#include <functional>
 #include <optional>
-#include <utility>
 #include <vector>
 
-typedef std::pair<unsigned int, int> best_t;
-
-best_t find_nn(const tsp_t &tsp, const solution_t &solution,
-               unsigned int prev) {
+node_delta_t find_nn(const solution_t &solution,
+                     std::function<int(unsigned int)> cost_func) {
     std::optional<unsigned int> min;
     int min_cost = INT_MAX;
 
-    for (auto next : solution.remaining_nodes) {
-        int cost = tsp.adj_matrix(prev, next) + tsp.weights[next];
+    for (unsigned int node : solution.remaining_nodes) {
+        int cost = cost_func(node);
 
         if (cost < min_cost || !min.has_value()) {
-            min = next;
+            min = node;
             min_cost = cost;
         }
     }
@@ -26,12 +24,12 @@ best_t find_nn(const tsp_t &tsp, const solution_t &solution,
     return {min.value(), min_cost};
 }
 
-best_t find_replace(const tsp_t &tsp, const solution_t &solution, int pos) {
+node_delta_t find_replace(const solution_t &solution, int pos) {
     std::optional<unsigned int> min;
     int min_cost = INT_MAX;
 
     for (auto node : solution.remaining_nodes) {
-        int cost = solution.get_cost_diff(node, pos);
+        int cost = solution.insert_delta(node, pos);
 
         if (cost < min_cost || !min.has_value()) {
             min = node;
@@ -68,4 +66,36 @@ std::vector<unsigned int> find_cycle(const tsp_t &tsp, unsigned int start) {
     }
 
     return path.value();
+}
+
+std::vector<operation_t> find_neighbourhood(const solution_t &solution,
+                                            intra_path_t type) {
+    std::vector<operation_t> operations;
+    operations.reserve(
+        solution.path.size() *
+        (solution.path.size() + solution.remaining_nodes.size()));
+
+    for (int i = 0; i < solution.path.size(); i++) {
+        for (int j = i + 1; j < solution.path.size(); j++) {
+            switch (type) {
+            case SWAP:
+                operations.push_back(
+                    operation_t{[i, j](solution_t &s) { s.swap(i, j); },
+                                solution.swap_delta(i, j)});
+                break;
+            case REVERSE:
+                operations.push_back(
+                    operation_t{[i, j](solution_t &s) { s.reverse(i, j); },
+                                solution.reverse_delta(i, j)});
+            }
+        }
+
+        for (auto node : solution.remaining_nodes) {
+            operations.push_back(
+                operation_t{[i, node](solution_t &s) { s.replace(node, i); },
+                            solution.replace_delta(node, i)});
+        }
+    }
+
+    return operations;
 }
