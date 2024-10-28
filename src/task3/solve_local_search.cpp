@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -30,12 +31,15 @@ enum IntrapathType {
     INTRA_EDGE_SWAP,
 };
 
+enum OperType { SWAP_NODES, SWAP_EDGES, REPLACE_NODE };
+
 struct operation_t {
-    std::function<void(solution_t &)> func;
+    OperType oper_type;
+    unsigned arg1, arg2;
     int cost_diff;
 
-    operation_t(std::function<void(solution_t &)> func, int cost_diff)
-        : func(func), cost_diff(cost_diff) {}
+    operation_t(OperType oper_type, unsigned arg1, unsigned arg2, int cost_diff)
+        : oper_type(oper_type), arg1(arg1), arg2(arg2), cost_diff(cost_diff) {}
 };
 
 class OperProducer {
@@ -57,6 +61,11 @@ class OperProducer {
         }
     }
 
+    void update_with_replace_oper(unsigned idx, unsigned new_node) {
+        free_nodes.insert(sol.path[idx]);
+        free_nodes.erase(new_node);
+    }
+
     unsigned get_num_operations() {
         unsigned path_size = sol.path.size();
         return path_size * (path_size - 1) / 2 +
@@ -71,30 +80,17 @@ class OperProducer {
         for (unsigned i = 0; i < path_size; i++) {
             for (unsigned j = i + 1; j < path_size; j++) {
                 if (intra_type == INTRA_NODE_SWAP) {
-                    operations.emplace_back(
-                        [i, j](solution_t &sol) {
-                            // std::cout << "Selected NODE_SWAP" << "\n";
-                            sol.swap_nodes(i, j);
-                        },
-                        sol.swap_nodes_cost_diff(i, j));
+                    operations.emplace_back(SWAP_NODES, i, j,
+                                            sol.swap_nodes_cost_diff(i, j));
                 } else if (intra_type == INTRA_EDGE_SWAP) {
-                    operations.emplace_back(
-                        [i, j](solution_t &sol) {
-                            // std::cout << "Selected EDGE_SWAP" << "\n";
-                            sol.swap_edges(i, j);
-                        },
-                        sol.swap_edges_cost_diff(i, j));
+                    operations.emplace_back(SWAP_EDGES, i, j,
+                                            sol.swap_edges_cost_diff(i, j));
                 }
             }
             // Interpath operation (replace node)
             for (unsigned new_node : free_nodes) {
                 operations.emplace_back(
-                    [i, new_node, this](solution_t &sol) {
-                        // std::cout << "Selected NODE_REPLACE" << "\n";
-                        this->free_nodes.insert(sol.path[i]);
-                        this->free_nodes.erase(new_node);
-                        sol.replace_node(i, new_node);
-                    },
+                    REPLACE_NODE, i, new_node,
                     sol.replace_node_cost_diff(i, new_node));
             }
         }
@@ -149,20 +145,18 @@ enum LocalSelectMethod { LOCAL_GREEDY, LOCAL_STEEPEST };
 
 class LocalSearcher {
   private:
-    std::optional<unsigned>
-    select_greedy(const std::vector<operation_t> &all_operations,
-                  const std::vector<unsigned> &idxs) {
+    int select_greedy(const std::vector<operation_t> &all_operations,
+                      const std::vector<unsigned> &idxs) {
         for (unsigned idx : idxs) {
             if (all_operations[idx].cost_diff < 0) {
                 return idx;
             }
         }
-        return std::nullopt;
+        return -1;
     }
 
-    std::optional<unsigned>
-    select_steepest(const std::vector<operation_t> &all_operations,
-                    const std::vector<unsigned> &idxs) {
+    int select_steepest(const std::vector<operation_t> &all_operations,
+                        const std::vector<unsigned> &idxs) {
         int best_diff = 0;
         std::optional<unsigned> best_idx;
         for (unsigned idx : idxs) {
@@ -171,7 +165,7 @@ class LocalSearcher {
                 best_diff = all_operations[idx].cost_diff;
             }
         }
-        return best_idx;
+        return -1;
     }
 
   public:
@@ -189,24 +183,40 @@ class LocalSearcher {
         for (unsigned i = 0; i < idxs.size(); i++) {
             idxs[i] = i;
         }
-
         while (step_made) {
             step_made = false;
+            // auto start = std::chrono::high_resolution_clock::now();
             std::vector<operation_t> all_operations =
                 oper_producer.get_all_operations();
+            // auto end = std::chrono::high_resolution_clock::now();
+            // std::cout << "get_all_operations() execution time: "
+            //           << (end - start).count() << " seconds\n";
 
             std::shuffle(idxs.begin(), idxs.end(), gen);
 
-            std::optional<unsigned> select_res;
+            int select_res;
             if (select_method == LOCAL_GREEDY) {
                 select_res = select_greedy(all_operations, idxs);
             } else if (select_method == LOCAL_STEEPEST) {
                 select_res = select_steepest(all_operations, idxs);
             }
 
-            if (select_res.has_value()) {
+            if (select_res != -1) {
                 step_made = true;
-                all_operations[select_res.value()].func(best_sol);
+                operation_t &oper = all_operations[select_res];
+                switch (oper.oper_type) {
+                case SWAP_NODES:
+                    best_sol.swap_nodes(oper.arg1, oper.arg2);
+                    break;
+                case SWAP_EDGES:
+                    best_sol.swap_edges(oper.arg1, oper.arg2);
+                    break;
+                case REPLACE_NODE:
+                    oper_producer.update_with_replace_oper(oper.arg1,
+                                                           oper.arg2);
+                    best_sol.replace_node(oper.arg1, oper.arg2);
+                    break;
+                }
                 // std::cout << "Cost after step: " << best_sol.cost << "\n";
             }
 

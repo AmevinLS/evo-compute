@@ -17,7 +17,7 @@ int main() {
             start_sols.push_back(random_solution(tsp, 100));
         }
         for (auto select_method : {LOCAL_GREEDY, LOCAL_STEEPEST}) {
-            for (auto intra : {/*INTRA_NODE_SWAP,*/ INTRA_EDGE_SWAP}) {
+            for (auto intra : {INTRA_NODE_SWAP, INTRA_EDGE_SWAP}) {
                 std::cout << tsp_path << " | " << select_method << " | "
                           << intra << "\n";
                 // Random solution

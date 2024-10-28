@@ -106,23 +106,25 @@ struct solution_t {
             std::swap(idx1, idx2);
         }
 
-        unsigned node1 = path[idx1];
-        unsigned node2 = path[idx2];
+        unsigned node1 = path[idx1], pre1 = decrem_idx(idx1),
+                 post1 = increm_idx(idx1);
+        unsigned node2 = path[idx2], pre2 = decrem_idx(idx2),
+                 post2 = increm_idx(idx2);
         int cost_diff = 0;
         if (increm_idx(idx1) == idx2) {
-            cost_diff -= tsp->adj_matrix(path[decrem_idx(idx1)], node1) +
-                         tsp->adj_matrix(node2, path[increm_idx(idx2)]);
-            cost_diff += tsp->adj_matrix(path[decrem_idx(idx1)], node2) +
-                         tsp->adj_matrix(node1, path[increm_idx(idx2)]);
+            cost_diff -= tsp->adj_matrix(path[pre1], node1) +
+                         tsp->adj_matrix(node2, path[post2]);
+            cost_diff += tsp->adj_matrix(path[pre1], node2) +
+                         tsp->adj_matrix(node1, path[post2]);
         } else {
-            cost_diff -= tsp->adj_matrix(path[decrem_idx(idx1)], node1) +
-                         tsp->adj_matrix(node1, path[increm_idx(idx1)]) +
-                         tsp->adj_matrix(path[decrem_idx(idx2)], node2) +
-                         tsp->adj_matrix(node2, path[increm_idx(idx2)]);
-            cost_diff += tsp->adj_matrix(path[decrem_idx(idx1)], node2) +
-                         tsp->adj_matrix(node2, path[increm_idx(idx1)]) +
-                         tsp->adj_matrix(path[decrem_idx(idx2)], node1) +
-                         tsp->adj_matrix(node1, path[increm_idx(idx2)]);
+            cost_diff -= tsp->adj_matrix(path[pre1], node1) +
+                         tsp->adj_matrix(node1, path[post1]) +
+                         tsp->adj_matrix(path[pre2], node2) +
+                         tsp->adj_matrix(node2, path[post2]);
+            cost_diff += tsp->adj_matrix(path[pre1], node2) +
+                         tsp->adj_matrix(node2, path[post1]) +
+                         tsp->adj_matrix(path[pre2], node1) +
+                         tsp->adj_matrix(node1, path[post2]);
         }
         return cost_diff;
     }
@@ -136,11 +138,11 @@ struct solution_t {
 
     int swap_edges_cost_diff(unsigned pos1, unsigned pos2) const {
         int cost_diff = 0;
-        cost_diff -= tsp->adj_matrix(path[pos1], path[increm_idx(pos1)]) +
-                     tsp->adj_matrix(path[pos2], path[increm_idx(pos2)]);
-        cost_diff +=
-            tsp->adj_matrix(path[pos1], path[pos2]) +
-            tsp->adj_matrix(path[increm_idx(pos1)], path[increm_idx(pos2)]);
+        unsigned after1 = increm_idx(pos1), after2 = increm_idx(pos2);
+        cost_diff -= tsp->adj_matrix(path[pos1], path[after1]) +
+                     tsp->adj_matrix(path[pos2], path[after2]);
+        cost_diff += tsp->adj_matrix(path[pos1], path[pos2]) +
+                     tsp->adj_matrix(path[after1], path[after2]);
         return cost_diff;
     }
 
