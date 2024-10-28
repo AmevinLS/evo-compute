@@ -15,31 +15,41 @@ enum search_t { GREEDY, STEEPEST };
 std::optional<operation_t>
 greedy_search(const solution_t &solution,
               std::vector<operation_t> &neighbourhood,
-              solution_t::op_type_t op_type) {
+              std::vector<int> &indices, solution_t::op_type_t op_type) {
     neighbourhood.clear();
 
     for (unsigned int i = 0; i < solution.path.size(); i++) {
         for (unsigned int j = i + 1; j < solution.path.size(); j++) {
-            int op_delta = op_type == solution_t::SWAP
-                               ? solution.swap_delta(i, j)
-                               : solution.reverse_delta(i, j);
-
-            neighbourhood.emplace_back(operation_t{op_type, i, j, op_delta});
+            neighbourhood.emplace_back(operation_t{op_type, i, j, 0});
         }
 
         for (auto node : solution.remaining_nodes) {
-            int op_delta = solution.replace_delta(node, i);
-
             neighbourhood.emplace_back(
-                operation_t{solution_t::REPLACE, node, i, op_delta});
+                operation_t{solution_t::REPLACE, node, i, 0});
         }
     }
 
-    std::shuffle(neighbourhood.begin(), neighbourhood.end(), g);
+    std::shuffle(indices.begin(), indices.end(), g);
 
-    for (operation_t operation : neighbourhood) {
-        if (operation.delta < 0) {
-            return operation;
+    for (int idx : indices) {
+        operation_t op = neighbourhood[idx];
+        int delta = 0;
+        switch (op.type) {
+        case solution_t::SWAP:
+            delta = solution.swap_delta(op.arg1, op.arg2);
+            break;
+        case solution_t::REVERSE:
+            delta = solution.reverse_delta(op.arg1, op.arg2);
+            break;
+        case solution_t::REPLACE:
+            delta = solution.replace_delta(op.arg1, op.arg2);
+            break;
+        default:
+            break;
+        }
+
+        if (delta < 0) {
+            return op;
         }
     }
 
@@ -78,18 +88,26 @@ std::optional<operation_t> steepest_search(const solution_t &solution,
 solution_t solve_local_search(solution_t solution,
                               solution_t::op_type_t op_type,
                               search_t search_type) {
+    unsigned int path_size = solution.path.size();
+    unsigned int neighbourhood_size =
+        path_size * (path_size - 1) / 2 +
+        path_size * solution.remaining_nodes.size();
     std::vector<operation_t> neighbourhood;
+    std::vector<int> indices;
 
     if (search_type == GREEDY) {
-        unsigned int path_size = solution.path.size();
-        neighbourhood.reserve(path_size * (path_size - 1) / 2 +
-                              path_size * solution.remaining_nodes.size());
+        neighbourhood.reserve(neighbourhood_size);
+        indices.reserve(neighbourhood_size);
+
+        for (int i = 0; i < neighbourhood_size; i++) {
+            indices.push_back(i);
+        }
     }
 
     while (true) {
         std::optional<operation_t> best_op =
             search_type == GREEDY
-                ? greedy_search(solution, neighbourhood, op_type)
+                ? greedy_search(solution, neighbourhood, indices, op_type)
                 : steepest_search(solution, op_type);
 
         solution.search_iters++;
