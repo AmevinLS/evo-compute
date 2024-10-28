@@ -49,12 +49,15 @@ struct tsp_t {
 
 struct solution_t {
     int cost;
+    int runtime_ms;
     std::vector<unsigned int> path;
     std::set<unsigned int> remaining_nodes;
     const tsp_t *tsp;
 
-    solution_t(const tsp_t &tsp, std::vector<unsigned int> path)
-        : cost(0), path(path), remaining_nodes(), tsp(&tsp) {
+    solution_t(const tsp_t &tsp, std::vector<unsigned int> path,
+               int runtime_ms = 0)
+        : cost(0), runtime_ms(runtime_ms), path(path), remaining_nodes(),
+          tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
             remaining_nodes.insert(i);
         }
@@ -71,8 +74,8 @@ struct solution_t {
     }
 
     solution_t(const tsp_t &tsp, unsigned int start)
-        : cost(tsp.weights[start]), path({start}), remaining_nodes(),
-          tsp(&tsp) {
+        : cost(tsp.weights[start]), runtime_ms(0), path({start}),
+          remaining_nodes(), tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
             if (i == start) {
                 continue;

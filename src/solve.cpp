@@ -5,6 +5,7 @@
 #include "task2/solve_greedy_regret.cpp"
 #include "task3/solve_local_search.cpp"
 
+#include <chrono>
 #include <map>
 #include <vector>
 
@@ -76,10 +77,16 @@ std::vector<solution_t> solve(const tsp_t &tsp, heuristic_t heuristic) {
         return random_heuristics_to_fn[heuristic](tsp, n);
     }
 
-    auto fn = gen_heuristics_to_fn[heuristic];
+    const auto fn = gen_heuristics_to_fn[heuristic];
 
     for (unsigned int i = 0; i < tsp.n; i++) {
-        solutions.push_back(fn(tsp, n, i));
+        const auto start = std::chrono::high_resolution_clock::now();
+        solution_t solution = fn(tsp, n, i);
+        solution.runtime_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start)
+                .count();
+        solutions.push_back(solution);
     }
 
     return solutions;

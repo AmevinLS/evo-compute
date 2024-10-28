@@ -12,7 +12,8 @@ solution_t solve_nn_end(const tsp_t &tsp, unsigned int n, unsigned int start) {
         solution.append(min);
     }
 
-    solution.commit();
+    solution.cost +=
+        tsp.adj_matrix(solution.path.back(), solution.path.front());
     return solution;
 }
 
@@ -49,6 +50,7 @@ solution_t solve_nn_any(const tsp_t &tsp, unsigned int n, unsigned int start) {
         }
     }
 
-    solution.commit();
+    solution.cost +=
+        tsp.adj_matrix(solution.path.back(), solution.path.front());
     return solution;
 }
