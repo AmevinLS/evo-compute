@@ -92,6 +92,8 @@ solution_t solve_local_search(solution_t solution,
                 ? greedy_search(solution, neighbourhood, op_type)
                 : steepest_search(solution, op_type);
 
+        solution.search_iters++;
+
         if (!best_op.has_value()) {
             break;
         }

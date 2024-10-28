@@ -50,14 +50,15 @@ struct tsp_t {
 struct solution_t {
     int cost;
     int runtime_ms;
+    int search_iters;
     std::vector<unsigned int> path;
     std::set<unsigned int> remaining_nodes;
     const tsp_t *tsp;
 
     solution_t(const tsp_t &tsp, std::vector<unsigned int> path,
-               int runtime_ms = 0)
-        : cost(0), runtime_ms(runtime_ms), path(path), remaining_nodes(),
-          tsp(&tsp) {
+               int runtime_ms = 0, int search_iters = 0)
+        : cost(0), runtime_ms(runtime_ms), search_iters(search_iters),
+          path(path), remaining_nodes(), tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
             remaining_nodes.insert(i);
         }
@@ -74,8 +75,8 @@ struct solution_t {
     }
 
     solution_t(const tsp_t &tsp, unsigned int start)
-        : cost(tsp.weights[start]), runtime_ms(0), path({start}),
-          remaining_nodes(), tsp(&tsp) {
+        : cost(tsp.weights[start]), runtime_ms(0), search_iters(0),
+          path({start}), remaining_nodes(), tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
             if (i == start) {
                 continue;
@@ -129,7 +130,7 @@ struct solution_t {
     // -> 1, 3 -> {0, 3, 2, 1, 4})
     void reverse(int pos1, int pos2) {
         cost += reverse_delta(pos1, pos2);
-        std::reverse(path.begin() + pos1 + 1, path.begin() + pos2 + 1);
+        std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
     }
 
 #pragma endregion Operators
@@ -194,10 +195,14 @@ struct solution_t {
 
     // Cost delta of reversing the path from pos1 to pos2 (see: reverse)
     int reverse_delta(int pos1, int pos2) const {
-        int a = path[pos1];
-        int b = path[next(pos1)];
+        int a = path[prev(pos1)];
+        int b = path[pos1];
         int c = path[pos2];
         int d = path[next(pos2)];
+
+        if (a == c) {
+            return 0;
+        }
 
         return tsp->adj_matrix(a, c) + tsp->adj_matrix(b, d) -
                tsp->adj_matrix(a, b) - tsp->adj_matrix(c, d);
