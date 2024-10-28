@@ -1,13 +1,11 @@
-#include <iostream>
-#include <optional>
-#include <random>
-#include <vector>
-
-#include "../common/print.cpp"
 #include "../common/search.cpp"
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include "../task2/solve_greedy_regret.cpp"
+
+#include <optional>
+#include <random>
+#include <vector>
 
 enum search_t { GREEDY, STEEPEST };
 
@@ -40,8 +38,6 @@ solution_t solve_local_search(solution_t start, intra_path_t intra_op_type,
     solution_t cur = start;
     std::mt19937 g = std::mt19937(std::random_device()());
 
-    std::cout << cur;
-
     while (true) {
         std::vector<operation_t> neighbourhood =
             find_neighbourhood(cur, intra_op_type);
@@ -57,10 +53,8 @@ solution_t solve_local_search(solution_t start, intra_path_t intra_op_type,
         if (!best_op.has_value()) {
             break;
         }
+
         best_op.value().func(cur);
-        std::cout << best_op.value().delta << "\n";
-        // std::cout << "Cost after step: " << cur.cost << "\n";
-        std::cout << cur;
     }
 
     return cur;

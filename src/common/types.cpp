@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <set>
 #include <utility>
@@ -107,35 +108,28 @@ struct solution_t {
 
     // Replace node at pos with node ({0, 1, 2} -> 1 -> {0, node, 2})
     void replace(unsigned int node, int pos) {
-        int delta = replace_delta(pos, node);
-        std::cout << "Replacing " << path[pos] + 1 << " with " << node + 1
-                  << " for " << delta << std::endl;
-        cost += delta;
+        cost += replace_delta(node, pos);
+        unsigned int old_node = path[pos];
         path[pos] = node;
         remaining_nodes.erase(node);
-        remaining_nodes.insert(path[pos]);
+        remaining_nodes.insert(old_node);
     }
 
     // Swap nodes at pos1 and pos2 ({0, 1, 2} -> 1, 2 -> {0, 2, 1})
     void swap(int pos1, int pos2) {
-        int delta = swap_delta(pos1, pos2);
-        std::cout << "Swapping " << pos1 << " (" << path[pos1] + 1 << ") and "
-                  << pos2 << " (" << path[pos2] + 1 << ") for " << delta
-                  << std::endl;
-
-        cost += delta;
+        cost += swap_delta(pos1, pos2);
         std::swap(path[pos1], path[pos2]);
     }
 
-    // Reverse path from pos1 to pos2 i.e. swap the edges ({0, 1, 2, 3, 4} -> 1,
-    // 3 -> {0, 3, 2, 1, 4})
+    // Reverse path from pos1 to pos2 i.e. swap the edges ({0, 1, 2, 3, 4}
+    // -> 1, 3 -> {0, 3, 2, 1, 4})
     void reverse(int pos1, int pos2) {
         cost += reverse_delta(pos1, pos2);
         std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
     }
 
-    // Add the cost of the edge from the last node to the first node (for the
-    // methods that don't include that cost by default)
+    // Add the cost of the edge from the last node to the first node (for
+    // the methods that don't include that cost by default)
     void commit() { cost += tsp->adj_matrix(path.back(), path.front()); }
 
 #pragma endregion Operators
@@ -154,7 +148,7 @@ struct solution_t {
     // Cost delta of inserting node at pos (see: insert)
     int insert_delta(unsigned int node, int pos) const {
         unsigned int a = path[pos];
-        unsigned int b = path[(pos + 1) % path.size()];
+        unsigned int b = path[next(pos)];
         return tsp->weights[node] + tsp->adj_matrix(a, node) +
                tsp->adj_matrix(node, b) - tsp->adj_matrix(a, b);
     }
@@ -162,8 +156,8 @@ struct solution_t {
     // Cost delta of replacing node at pos (see: replace)
     int replace_delta(unsigned int node, int pos) const {
         unsigned int old_node = path[pos];
-        unsigned int a = path[(pos - 1) % path.size()];
-        unsigned int b = path[(pos + 1) % path.size()];
+        unsigned int a = path[prev(pos)];
+        unsigned int b = path[next(pos)];
 
         return tsp->adj_matrix(a, node) + tsp->adj_matrix(node, b) +
                tsp->weights[node] - tsp->adj_matrix(a, old_node) -
@@ -175,14 +169,21 @@ struct solution_t {
         unsigned node1 = path[pos1];
         unsigned node2 = path[pos2];
 
-        unsigned int a1 = path[(pos1 - 1) % path.size()];
-        unsigned int b1 = path[(pos1 + 1) % path.size()];
-        unsigned int a2 = path[(pos2 - 1) % path.size()];
-        unsigned int b2 = path[(pos2 + 1) % path.size()];
+        unsigned int a1 = path[prev(pos1)];
+        unsigned int b1 = path[next(pos1)];
+        unsigned int a2 = path[prev(pos2)];
+        unsigned int b2 = path[next(pos2)];
 
-        if (b1 == node2) {
+        // next to each other
+        if (node2 == b1) {
             return tsp->adj_matrix(a1, node2) + tsp->adj_matrix(node1, b2) -
                    tsp->adj_matrix(a1, node1) - tsp->adj_matrix(node2, b2);
+        }
+
+        // loop
+        if (node1 == b2) {
+            return tsp->adj_matrix(a2, node1) + tsp->adj_matrix(node2, b1) -
+                   tsp->adj_matrix(a2, node2) - tsp->adj_matrix(node1, b1);
         }
 
         return tsp->adj_matrix(a1, node2) + tsp->adj_matrix(node2, b1) +
@@ -193,16 +194,33 @@ struct solution_t {
 
     // Cost delta of reversing the path from pos1 to pos2 (see: reverse)
     int reverse_delta(int pos1, int pos2) const {
-        int a = path[(pos1 - 1) % path.size()];
+        int a = path[prev(pos1)];
         int b = path[pos1];
         int c = path[pos2];
-        int d = path[(pos2 + 1) % path.size()];
+        int d = path[next(pos2)];
+
+        if (a == c || b == d) {
+            return 0;
+        }
 
         return tsp->adj_matrix(a, c) + tsp->adj_matrix(b, d) -
                tsp->adj_matrix(a, b) - tsp->adj_matrix(c, d);
     }
 
 #pragma endregion Cost functions
+
+#pragma region Helpers
+
+    int next(int i) const { return (i + 1) % path.size(); }
+
+    int prev(int i) const { return (i - 1 + path.size()) % path.size(); }
+
+    bool is_valid() const {
+        return std::set(path.begin(), path.end()).size() == path.size() &&
+               path.size() == ceil(tsp->n / 2.0);
+    }
+
+#pragma endregion Helpers
 };
 
 typedef std::pair<unsigned int, int> pos_delta_t;
