@@ -129,7 +129,7 @@ struct solution_t {
     // -> 1, 3 -> {0, 3, 2, 1, 4})
     void reverse(int pos1, int pos2) {
         cost += reverse_delta(pos1, pos2);
-        std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
+        std::reverse(path.begin() + pos1 + 1, path.begin() + pos2 + 1);
     }
 
 #pragma endregion Operators
@@ -194,14 +194,10 @@ struct solution_t {
 
     // Cost delta of reversing the path from pos1 to pos2 (see: reverse)
     int reverse_delta(int pos1, int pos2) const {
-        int a = path[prev(pos1)];
-        int b = path[pos1];
+        int a = path[pos1];
+        int b = path[next(pos1)];
         int c = path[pos2];
         int d = path[next(pos2)];
-
-        if (a == c || b == d) {
-            return 0;
-        }
 
         return tsp->adj_matrix(a, c) + tsp->adj_matrix(b, d) -
                tsp->adj_matrix(a, b) - tsp->adj_matrix(c, d);
