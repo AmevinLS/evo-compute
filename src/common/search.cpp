@@ -67,34 +67,3 @@ std::vector<unsigned int> find_cycle(const tsp_t &tsp, unsigned int start) {
 
     return path.value();
 }
-
-std::vector<operation_t> find_neighbourhood(const solution_t &solution,
-                                            solution_t::op_type_t op_type) {
-    unsigned int path_size = solution.path.size();
-    std::vector<operation_t> operations;
-    operations.reserve(path_size * (path_size - 1) / 2 +
-                       path_size * solution.remaining_nodes.size());
-
-    for (unsigned int i = 0; i < solution.path.size(); i++) {
-        for (unsigned int j = i + 1; j < solution.path.size(); j++) {
-            switch (op_type) {
-            case solution_t::SWAP:
-                operations.emplace_back(
-                    operation_t{op_type, i, j, solution.swap_delta(i, j)});
-                break;
-            case solution_t::REVERSE:
-                operations.emplace_back(
-                    operation_t{op_type, i, j, solution.reverse_delta(i, j)});
-            default:
-                break;
-            }
-        }
-
-        for (auto node : solution.remaining_nodes) {
-            operations.emplace_back(operation_t{
-                solution_t::REPLACE, node, i, solution.insert_delta(node, i)});
-        }
-    }
-
-    return operations;
-}

@@ -1,4 +1,3 @@
-#include "../common/search.cpp"
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include "../task2/solve_greedy_regret.cpp"
@@ -10,45 +9,63 @@
 
 enum search_t { GREEDY, STEEPEST };
 
-std::optional<operation_t>
-greedy_search(const std::vector<operation_t> &operations) {
-    for (operation_t operation : operations) {
-        if (operation.delta < 0) {
-            return operation;
-        }
-    }
-
-    return std::nullopt;
-}
-
-std::optional<operation_t>
-steepest_search(const std::vector<operation_t> &operations) {
-    int best_diff = 0;
-    std::optional<operation_t> best_op;
-    for (operation_t operation : operations) {
-        if (operation.delta < best_diff) {
-            best_op = operation;
-            best_diff = operation.delta;
-        }
-    }
-    return best_op;
-}
-
 solution_t solve_local_search(solution_t solution,
                               solution_t::op_type_t op_type,
                               search_t search_type) {
     std::mt19937 g = std::mt19937(std::random_device()());
+    unsigned int path_size = solution.path.size();
+    std::vector<operation_t> neighbourhood;
+    neighbourhood.reserve(path_size * (path_size - 1) / 2 +
+                          path_size * solution.remaining_nodes.size());
 
     while (true) {
-        std::vector<operation_t> neighbourhood =
-            find_neighbourhood(solution, op_type);
-        std::shuffle(neighbourhood.begin(), neighbourhood.end(), g);
-
+        neighbourhood.clear();
+        int delta = 0;
         std::optional<operation_t> best_op;
+
+        for (unsigned int i = 0; i < solution.path.size(); i++) {
+            for (unsigned int j = i + 1; j < solution.path.size(); j++) {
+                switch (op_type) {
+                case solution_t::SWAP:
+                    neighbourhood.emplace_back(
+                        operation_t{op_type, i, j, solution.swap_delta(i, j)});
+                    break;
+                case solution_t::REVERSE:
+                    neighbourhood.emplace_back(operation_t{
+                        op_type, i, j, solution.reverse_delta(i, j)});
+                default:
+                    break;
+                }
+
+                if (search_type == STEEPEST &&
+                    neighbourhood.back().delta < delta) {
+                    delta = neighbourhood.back().delta;
+                    best_op = neighbourhood.back();
+                }
+            }
+
+            for (auto node : solution.remaining_nodes) {
+                neighbourhood.emplace_back(
+                    operation_t{solution_t::REPLACE, node, i,
+                                solution.insert_delta(node, i)});
+
+                if (search_type == STEEPEST &&
+                    neighbourhood.back().delta < delta) {
+                    delta = neighbourhood.back().delta;
+                    best_op = neighbourhood.back();
+                }
+            }
+        }
+
         if (search_type == GREEDY) {
-            best_op = greedy_search(neighbourhood);
-        } else if (search_type == STEEPEST) {
-            best_op = steepest_search(neighbourhood);
+            std::shuffle(neighbourhood.begin(), neighbourhood.end(), g);
+
+            for (operation_t operation : neighbourhood) {
+                if (operation.delta < 0) {
+                    best_op = operation;
+                    break;
+                }
+            }
         }
 
         if (!best_op.has_value()) {
