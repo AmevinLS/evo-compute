@@ -102,24 +102,27 @@ struct solution_t {
         if (idx1 > idx2) {
             std::swap(idx1, idx2);
         }
+        if (idx1 == 0 && idx2 == path.size() - 1) {
+            std::swap(idx1, idx2);
+        }
 
         unsigned node1 = path[idx1];
         unsigned node2 = path[idx2];
         int cost_diff = 0;
-        if (idx1 + 1 == idx2) {
-            cost_diff -= tsp->adj_matrix(path[shift_idx(idx1, -1)], node1) +
-                         tsp->adj_matrix(node2, path[shift_idx(idx2, 1)]);
-            cost_diff += tsp->adj_matrix(path[shift_idx(idx1, -1)], node2) +
-                         tsp->adj_matrix(node1, path[shift_idx(idx2, 1)]);
+        if (increm_idx(idx1) == idx2) {
+            cost_diff -= tsp->adj_matrix(path[decrem_idx(idx1)], node1) +
+                         tsp->adj_matrix(node2, path[increm_idx(idx2)]);
+            cost_diff += tsp->adj_matrix(path[decrem_idx(idx1)], node2) +
+                         tsp->adj_matrix(node1, path[increm_idx(idx2)]);
         } else {
-            cost_diff -= tsp->adj_matrix(path[shift_idx(idx1, -1)], node1) +
-                         tsp->adj_matrix(node1, path[shift_idx(idx1, 1)]) +
-                         tsp->adj_matrix(path[shift_idx(idx2, -1)], node2) +
-                         tsp->adj_matrix(node2, path[shift_idx(idx2, 1)]);
-            cost_diff += tsp->adj_matrix(path[shift_idx(idx1, -1)], node2) +
-                         tsp->adj_matrix(node2, path[shift_idx(idx1, 1)]) +
-                         tsp->adj_matrix(path[shift_idx(idx2, -1)], node1) +
-                         tsp->adj_matrix(node1, path[shift_idx(idx2, 1)]);
+            cost_diff -= tsp->adj_matrix(path[decrem_idx(idx1)], node1) +
+                         tsp->adj_matrix(node1, path[increm_idx(idx1)]) +
+                         tsp->adj_matrix(path[decrem_idx(idx2)], node2) +
+                         tsp->adj_matrix(node2, path[increm_idx(idx2)]);
+            cost_diff += tsp->adj_matrix(path[decrem_idx(idx1)], node2) +
+                         tsp->adj_matrix(node2, path[increm_idx(idx1)]) +
+                         tsp->adj_matrix(path[decrem_idx(idx2)], node1) +
+                         tsp->adj_matrix(node1, path[increm_idx(idx2)]);
         }
         return cost_diff;
     }
@@ -127,14 +130,17 @@ struct solution_t {
     void swap_nodes(unsigned idx1, unsigned idx2) {
         cost += swap_nodes_cost_diff(idx1, idx2);
         std::swap(path[idx1], path[idx2]);
+        // std::cout << "Swapping Nodes " << idx1 << " and " << idx2 << "\n";
+        // validate_cost();
     }
 
     int swap_edges_cost_diff(unsigned pos1, unsigned pos2) const {
         int cost_diff = 0;
-        cost_diff -= tsp->adj_matrix(path[pos1], shift_idx(pos1, 1)) +
-                     tsp->adj_matrix(path[pos2], shift_idx(pos2, 1));
-        cost_diff += tsp->adj_matrix(path[pos1], path[pos2]) +
-                     tsp->adj_matrix(shift_idx(pos1, 1), shift_idx(pos2, 1));
+        cost_diff -= tsp->adj_matrix(path[pos1], path[increm_idx(pos1)]) +
+                     tsp->adj_matrix(path[pos2], path[increm_idx(pos2)]);
+        cost_diff +=
+            tsp->adj_matrix(path[pos1], path[pos2]) +
+            tsp->adj_matrix(path[increm_idx(pos1)], path[increm_idx(pos2)]);
         return cost_diff;
     }
 
@@ -144,44 +150,77 @@ struct solution_t {
         }
         cost += swap_edges_cost_diff(pos1, pos2);
         std::reverse(path.begin() + pos1 + 1, path.begin() + pos2 + 1);
+        // std::cout << "Swapping Edges " << pos1 << " and " << pos2 << "\n";
+        // validate_cost();
     }
 
     int replace_node_cost_diff(unsigned idx, unsigned new_node) const {
         unsigned old_node = path[idx];
         int cost_diff = 0;
-        cost_diff -= tsp->adj_matrix(path[shift_idx(idx, -1)], old_node) +
-                     tsp->adj_matrix(old_node, path[shift_idx(idx, 1)]);
-        cost_diff += tsp->adj_matrix(path[shift_idx(idx, -1)], new_node) +
-                     tsp->adj_matrix(new_node, path[shift_idx(idx, 1)]);
+        cost_diff -= tsp->adj_matrix(path[decrem_idx(idx)], old_node) +
+                     tsp->adj_matrix(old_node, path[increm_idx(idx)]) +
+                     tsp->weights[old_node];
+        cost_diff += tsp->adj_matrix(path[decrem_idx(idx)], new_node) +
+                     tsp->adj_matrix(new_node, path[increm_idx(idx)]) +
+                     tsp->weights[new_node];
         return cost_diff;
     }
 
     void replace_node(unsigned idx, unsigned new_node) {
-        // TODO: check if new_node already in path?
+        // check if new_node already in path:
+        // if (std::find(path.begin(), path.end(), new_node) != path.end())
+        //     throw std::logic_error("Node " + std::to_string(new_node) +
+        //                            " already present in path");
         unsigned old_node = path[idx];
         cost += replace_node_cost_diff(idx, new_node);
         path[idx] = new_node;
+        // validate_cost();
     }
 
-    unsigned shift_idx(unsigned idx, int steps) const {
-        if (steps == 0)
-            return idx;
+    unsigned increm_idx(unsigned idx) const { return (idx + 1) % path.size(); }
 
-        unsigned pre_remainder;
-        if (steps < 0)
-            pre_remainder = idx;
-        else
-            pre_remainder = path.size() - idx;
-
-        unsigned post_remainder = (steps - pre_remainder) % path.size();
-        unsigned result_idx;
-        if (steps < 0)
-            result_idx = path.size() - post_remainder;
-        else
-            result_idx = post_remainder;
-
-        return result_idx;
+    unsigned decrem_idx(unsigned idx) const {
+        if (idx == 0)
+            return path.size() - 1;
+        return idx - 1;
     }
+
+    void validate_cost() {
+        unsigned actual_cost = 0;
+        for (unsigned i = 0; i < path.size() - 1; i++) {
+            actual_cost +=
+                tsp->weights[path[i]] + tsp->adj_matrix(path[i], path[i + 1]);
+        }
+        actual_cost += tsp->weights[path.back()] +
+                       tsp->adj_matrix(path.back(), path.front());
+
+        if (actual_cost != cost) {
+            throw std::logic_error(
+                "Actual cost (" + std::to_string(actual_cost) +
+                ") is different than stored (" + std::to_string(cost) + ")!");
+        }
+    }
+
+    // unsigned shift_idx(unsigned idx, int steps) const {
+    //     if (steps == 0)
+    //         return idx;
+
+    //     unsigned pre_remainder, post_remainder;
+    //     if (steps < 0)
+    //         pre_remainder = idx;
+    //     else
+    //         pre_remainder = path.size() - idx;
+    //     post_remainder = (steps - pre_remainder) % path.size();
+
+    //     unsigned post_remainder = (steps - pre_remainder) % path.size();
+    //     unsigned result_idx;
+    //     if (steps < 0)
+    //         result_idx = path.size() - post_remainder;
+    //     else
+    //         result_idx = post_remainder;
+
+    //     return result_idx;
+    // }
 
     void commit() { cost += tsp->adj_matrix(path.back(), path.front()); }
 

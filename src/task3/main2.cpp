@@ -6,7 +6,6 @@
 #include "solve_local_search.cpp"
 
 int main() {
-    std::cout << "Hello\n";
     for (std::string tsp_path :
          {"../../data/TSPA.csv", "../../data/TSPB.csv"}) {
         std::ifstream fin(tsp_path);
@@ -18,7 +17,7 @@ int main() {
             start_sols.push_back(random_solution(tsp, 100));
         }
         for (auto select_method : {LOCAL_GREEDY, LOCAL_STEEPEST}) {
-            for (auto intra : {INTRA_NODE_SWAP, INTRA_EDGE_SWAP}) {
+            for (auto intra : {/*INTRA_NODE_SWAP,*/ INTRA_EDGE_SWAP}) {
                 std::cout << tsp_path << " | " << select_method << " | "
                           << intra << "\n";
                 // Random solution
@@ -26,6 +25,9 @@ int main() {
                 for (const auto &start_sol : start_sols) {
                     res_sols.push_back(
                         searcher.local_search(start_sol, select_method, intra));
+                    std::cout << "Finished processing solution "
+                              << res_sols.size()
+                              << ". Cost: " << res_sols.back().cost << "\n";
                 }
                 std::string instance_name =
                     tsp_path.substr(tsp_path.find_last_of("/\\") + 1);

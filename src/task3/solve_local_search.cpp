@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include <iterator>
 #include <map>
 #include <optional>
@@ -32,131 +33,117 @@ enum IntrapathType {
 struct operation_t {
     std::function<void(solution_t &)> func;
     int cost_diff;
+
+    operation_t(std::function<void(solution_t &)> func, int cost_diff)
+        : func(func), cost_diff(cost_diff) {}
 };
 
-// class SolutionTracker {
-//   private:
-//     std::vector<operation_t> all_opers;
-//     std::map<std::pair<unsigned, unsigned>, operation_t> node_swap_opers;
-//     std::map<std::pair<unsigned, unsigned>, operation_t> edge_swap_opers;
-//     std::map<std::pair<unsigned, unsigned>, operation_t>
-//         node_replace_opers; // pair is (idx, new_node)
+class OperProducer {
+  private:
+    std::set<unsigned> free_nodes;
 
-//     std::vector<operation_t> get_all_operations() const {
-//         std::set<unsigned> remaining_nodes(sol.path.begin(), sol.path.end());
-//         for (unsigned node = 0; node < sol.tsp->n; node++) {
-//             remaining_nodes.insert(node);
-//         }
-//         for (unsigned node : sol.path) {
-//             remaining_nodes.erase(node);
-//         }
+  public:
+    solution_t &sol;
+    IntrapathType intra_type;
 
-//         std::vector<operation_t> operations;
-//         operations.reserve(sol.tsp->n * sol.tsp->n);
-//         for (int i = 0; i < sol.path.size(); i++) {
-//             for (int j = i + 1; j < sol.path.size(); j++) {
-//                 operation_t operation;
-//                 int cost_diff;
-//                 if (intra_type == INTRA_NODE_SWAP) {
-//                     operation.cost_diff = sol.swap_nodes_cost_diff(i, j);
-//                     operation.func = [i, j](solution_t &sol) {
-//                         sol.swap_nodes(i, j);
-//                     };
-//                 } else if (intra_type == INTRA_EDGE_SWAP) {
-//                     operation.cost_diff = sol.swap_edges_cost_diff(i, j);
-//                     operation.func = [i, j](solution_t &sol) {
-//                         sol.swap_edges(i, j);
-//                     };
-//                 }
-//                 operations.push_back(operation);
-//             }
-//             // Interpath operation (replace node)
-//             for (unsigned new_node : remaining_nodes) {
-//                 operation_t operation;
-//                 solution_t new_sol = sol;
-//                 operation.cost_diff = sol.replace_node_cost_diff(i,
-//                 new_node); operation.func = [i, new_node](solution_t &sol) {
-//                     sol.replace_node(i, new_node);
-//                 };
-//                 operations.push_back(operation);
-//             }
-//         }
-//         return operations;
-//     }
+    OperProducer(solution_t &sol, IntrapathType intra_type)
+        : sol(sol), intra_type(intra_type) {
+        free_nodes = std::set<unsigned>();
+        for (unsigned i = 0; i < sol.tsp->n; i++) {
+            free_nodes.insert(i);
+        }
+        for (unsigned i : sol.path) {
+            free_nodes.erase(i);
+        }
+    }
 
-//   public:
-//     solution_t &sol;
-//     std::vector<operation_t> operations;
-//     IntrapathType intra_type;
+    unsigned get_num_operations() {
+        unsigned path_size = sol.path.size();
+        return path_size * (path_size - 1) / 2 +
+               path_size * (sol.tsp->n - path_size);
+    }
 
-//     SolutionTracker(solution_t &sol, IntrapathType intra_type)
-//         : sol(sol), intra_type(intra_type), operations(get_all_operations())
-//         {}
-
-//     unsigned get_total_opers() const {
-//         return node_swap_opers.size() + edge_swap_opers.size() +
-//                node_replace_opers.size();
-//     }
-
-//     void perform_oper(unsigned oper_idx) {
-//         unsigned node_swap_barrier = node_swap_opers.size();
-//         unsigned edge_swap_barrier = node_swap_barrier +
-//         edge_swap_opers.size(); unsigned node_replace_barrier =
-//             edge_swap_barrier + node_replace_opers.size();
-//         if (oper_idx < node_replace_barrier) {
-//             auto item_iter = std::advance(node_replace_opers.begin(), 5);
-
-//         } else if (oper_idx < edge_swap_barrier) {
-//             oper_idx -= node_replace_barrier;
-
-//         } else if (oper_idx < node_replace_barrier) {
-//             oper_idx -= edge_swap_barrier;
-//         }
-//     }
-// };
+    std::vector<operation_t> get_all_operations() {
+        unsigned path_size = sol.path.size();
+        unsigned num_opers = get_num_operations();
+        std::vector<operation_t> operations;
+        operations.reserve(num_opers);
+        for (unsigned i = 0; i < path_size; i++) {
+            for (unsigned j = i + 1; j < path_size; j++) {
+                if (intra_type == INTRA_NODE_SWAP) {
+                    operations.emplace_back(
+                        [i, j](solution_t &sol) {
+                            // std::cout << "Selected NODE_SWAP" << "\n";
+                            sol.swap_nodes(i, j);
+                        },
+                        sol.swap_nodes_cost_diff(i, j));
+                } else if (intra_type == INTRA_EDGE_SWAP) {
+                    operations.emplace_back(
+                        [i, j](solution_t &sol) {
+                            // std::cout << "Selected EDGE_SWAP" << "\n";
+                            sol.swap_edges(i, j);
+                        },
+                        sol.swap_edges_cost_diff(i, j));
+                }
+            }
+            // Interpath operation (replace node)
+            for (unsigned new_node : free_nodes) {
+                operations.emplace_back(
+                    [i, new_node, this](solution_t &sol) {
+                        // std::cout << "Selected NODE_REPLACE" << "\n";
+                        this->free_nodes.insert(sol.path[i]);
+                        this->free_nodes.erase(new_node);
+                        sol.replace_node(i, new_node);
+                    },
+                    sol.replace_node_cost_diff(i, new_node));
+            }
+        }
+        return std::move(operations);
+    }
+};
 
 // Get all neighbors in an arbitrary order
-std::vector<operation_t> get_all_operations(const solution_t &sol,
-                                            IntrapathType intra_type) {
-    std::set<unsigned> remaining_nodes;
-    for (unsigned node = 0; node < sol.tsp->n; node++) {
-        remaining_nodes.insert(node);
-    }
-    for (unsigned node : sol.path) {
-        remaining_nodes.erase(node);
-    }
+// std::vector<operation_t> get_all_operations(const solution_t &sol,
+//                                             IntrapathType intra_type) {
+//     std::set<unsigned> remaining_nodes;
+//     for (unsigned node = 0; node < sol.tsp->n; node++) {
+//         remaining_nodes.insert(node);
+//     }
+//     for (unsigned node : sol.path) {
+//         remaining_nodes.erase(node);
+//     }
 
-    std::vector<operation_t> operations;
-    operations.reserve(sol.tsp->n * sol.tsp->n);
-    for (int i = 0; i < sol.path.size(); i++) {
-        for (int j = i + 1; j < sol.path.size(); j++) {
-            operation_t operation;
-            if (intra_type == INTRA_NODE_SWAP) {
-                operation.cost_diff = sol.swap_nodes_cost_diff(i, j);
-                operation.func = [i, j](solution_t &sol) {
-                    sol.swap_nodes(i, j);
-                };
-            } else if (intra_type == INTRA_EDGE_SWAP) {
-                operation.cost_diff = sol.swap_edges_cost_diff(i, j);
-                operation.func = [i, j](solution_t &sol) {
-                    sol.swap_edges(i, j);
-                };
-            }
-            operations.push_back(operation);
-        }
-        // Interpath operation (replace node)
-        for (unsigned new_node : remaining_nodes) {
-            operation_t operation;
-            solution_t new_sol = sol;
-            operation.cost_diff = sol.replace_node_cost_diff(i, new_node);
-            operation.func = [i, new_node](solution_t &sol) {
-                sol.replace_node(i, new_node);
-            };
-            operations.push_back(operation);
-        }
-    }
-    return operations;
-}
+//     std::vector<operation_t> operations;
+//     operations.reserve(sol.tsp->n * sol.tsp->n);
+//     for (int i = 0; i < sol.path.size(); i++) {
+//         for (int j = i + 1; j < sol.path.size(); j++) {
+//             operation_t operation;
+//             if (intra_type == INTRA_NODE_SWAP) {
+//                 operation.cost_diff = sol.swap_nodes_cost_diff(i, j);
+//                 operation.func = [i, j](solution_t &sol) {
+//                     sol.swap_nodes(i, j);
+//                 };
+//             } else if (intra_type == INTRA_EDGE_SWAP) {
+//                 operation.cost_diff = sol.swap_edges_cost_diff(i, j);
+//                 operation.func = [i, j](solution_t &sol) {
+//                     sol.swap_edges(i, j);
+//                 };
+//             }
+//             operations.push_back(operation);
+//         }
+//         // Interpath operation (replace node)
+//         for (unsigned new_node : remaining_nodes) {
+//             operation_t operation;
+//             solution_t new_sol = sol;
+//             operation.cost_diff = sol.replace_node_cost_diff(i, new_node);
+//             operation.func = [i, new_node](solution_t &sol) {
+//                 sol.replace_node(i, new_node);
+//             };
+//             operations.push_back(operation);
+//         }
+//     }
+//     return operations;
+// }
 
 enum LocalSelectMethod { LOCAL_GREEDY, LOCAL_STEEPEST };
 
@@ -195,16 +182,19 @@ class LocalSearcher {
     solution_t local_search(const solution_t &curr_sol,
                             LocalSelectMethod select_method,
                             IntrapathType intrapath_type) {
-        solution_t best_sol = curr_sol;
         bool step_made = true;
+        solution_t best_sol = curr_sol;
+        OperProducer oper_producer(best_sol, intrapath_type);
+        std::vector<unsigned> idxs(oper_producer.get_num_operations());
+        for (unsigned i = 0; i < idxs.size(); i++) {
+            idxs[i] = i;
+        }
+
         while (step_made) {
             step_made = false;
-            std::vector all_operations =
-                get_all_operations(best_sol, intrapath_type);
-            std::vector<unsigned> idxs(all_operations.size());
-            for (unsigned i = 0; i < idxs.size(); i++) {
-                idxs[i] = i;
-            }
+            std::vector<operation_t> all_operations =
+                oper_producer.get_all_operations();
+
             std::shuffle(idxs.begin(), idxs.end(), gen);
 
             std::optional<unsigned> select_res;
@@ -217,8 +207,14 @@ class LocalSearcher {
             if (select_res.has_value()) {
                 step_made = true;
                 all_operations[select_res.value()].func(best_sol);
-                std::cout << "Cost after step: " << best_sol.cost << "\n";
+                // std::cout << "Cost after step: " << best_sol.cost << "\n";
             }
+
+            // std::set<unsigned> unique_nodes(best_sol.path.begin(),
+            //                                 best_sol.path.end());
+            // if (unique_nodes.size() < best_sol.path.size()) {
+            //     throw std::logic_error("Nodes are repeated in path");
+            // }
         }
         return best_sol;
     }
