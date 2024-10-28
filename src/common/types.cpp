@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <set>
 #include <utility>
 #include <vector>
@@ -85,6 +84,8 @@ struct solution_t {
 
 #pragma region Operators
 
+    enum op_type_t { APPEND, PREPEND, INSERT, REPLACE, SWAP, REVERSE };
+
     // Append node to the end of the path ({0, 1, 2} -> {0, 1, 2, node})
     void append(unsigned int node) {
         cost += tsp->adj_matrix(path.back(), node) + tsp->weights[node];
@@ -127,10 +128,6 @@ struct solution_t {
         cost += reverse_delta(pos1, pos2);
         std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
     }
-
-    // Add the cost of the edge from the last node to the first node (for
-    // the methods that don't include that cost by default)
-    void commit() { cost += tsp->adj_matrix(path.back(), path.front()); }
 
 #pragma endregion Operators
 
@@ -227,11 +224,8 @@ typedef std::pair<unsigned int, int> pos_delta_t;
 
 typedef std::pair<unsigned int, int> node_delta_t;
 
-enum expand_t { APPEND, PREPEND, INSERT };
-enum intra_path_t { SWAP, REVERSE };
-enum inter_path_t { REPLACE };
-
 struct operation_t {
-    std::function<void(solution_t &)> func;
+    solution_t::op_type_t type;
+    unsigned int arg1, arg2;
     int delta;
 };

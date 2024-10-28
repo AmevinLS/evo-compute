@@ -69,31 +69,30 @@ std::vector<unsigned int> find_cycle(const tsp_t &tsp, unsigned int start) {
 }
 
 std::vector<operation_t> find_neighbourhood(const solution_t &solution,
-                                            intra_path_t type) {
+                                            solution_t::op_type_t op_type) {
+    unsigned int path_size = solution.path.size();
     std::vector<operation_t> operations;
-    operations.reserve(
-        solution.path.size() *
-        (solution.path.size() + solution.remaining_nodes.size()));
+    operations.reserve(path_size * (path_size - 1) / 2 +
+                       path_size * solution.remaining_nodes.size());
 
-    for (int i = 0; i < solution.path.size(); i++) {
-        for (int j = i + 1; j < solution.path.size(); j++) {
-            switch (type) {
-            case SWAP:
-                operations.push_back(
-                    operation_t{[i, j](solution_t &s) { s.swap(i, j); },
-                                solution.swap_delta(i, j)});
+    for (unsigned int i = 0; i < solution.path.size(); i++) {
+        for (unsigned int j = i + 1; j < solution.path.size(); j++) {
+            switch (op_type) {
+            case solution_t::SWAP:
+                operations.emplace_back(
+                    operation_t{op_type, i, j, solution.swap_delta(i, j)});
                 break;
-            case REVERSE:
-                operations.push_back(
-                    operation_t{[i, j](solution_t &s) { s.reverse(i, j); },
-                                solution.reverse_delta(i, j)});
+            case solution_t::REVERSE:
+                operations.emplace_back(
+                    operation_t{op_type, i, j, solution.reverse_delta(i, j)});
+            default:
+                break;
             }
         }
 
         for (auto node : solution.remaining_nodes) {
-            operations.push_back(
-                operation_t{[i, node](solution_t &s) { s.replace(node, i); },
-                            solution.replace_delta(node, i)});
+            operations.emplace_back(operation_t{
+                solution_t::REPLACE, node, i, solution.insert_delta(node, i)});
         }
     }
 
