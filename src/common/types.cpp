@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 struct node_t {
