@@ -1,6 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <set>
+#include <utility>
 #include <vector>
 
 struct node_t {
@@ -46,12 +49,16 @@ struct tsp_t {
 
 struct solution_t {
     int cost;
+    int runtime_ms;
+    int search_iters;
     std::vector<unsigned int> path;
     std::set<unsigned int> remaining_nodes;
     const tsp_t *tsp;
 
-    solution_t(const tsp_t &tsp, std::vector<unsigned int> path)
-        : cost(0), path(path), remaining_nodes(), tsp(&tsp) {
+    solution_t(const tsp_t &tsp, std::vector<unsigned int> path,
+               int runtime_ms = 0, int search_iters = 0)
+        : cost(0), runtime_ms(runtime_ms), search_iters(search_iters),
+          path(path), remaining_nodes(), tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
             remaining_nodes.insert(i);
         }
@@ -68,8 +75,8 @@ struct solution_t {
     }
 
     solution_t(const tsp_t &tsp, unsigned int start)
-        : cost(tsp.weights[start]), path({start}), remaining_nodes(),
-          tsp(&tsp) {
+        : cost(tsp.weights[start]), runtime_ms(0), search_iters(0),
+          path({start}), remaining_nodes(), tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
             if (i == start) {
                 continue;
@@ -79,30 +86,150 @@ struct solution_t {
         }
     }
 
+#pragma region Operators
+
+    enum op_type_t { APPEND, PREPEND, INSERT, REPLACE, SWAP, REVERSE };
+
+    // Append node to the end of the path ({0, 1, 2} -> {0, 1, 2, node})
     void append(unsigned int node) {
         cost += tsp->adj_matrix(path.back(), node) + tsp->weights[node];
         path.push_back(node);
         remaining_nodes.erase(node);
     }
 
+    // Prepend node to the beginning of the path ({0, 1, 2} -> {node, 0, 1, 2})
     void prepend(unsigned int node) {
         cost += tsp->adj_matrix(node, path.front()) + tsp->weights[node];
         path.insert(path.begin(), node);
         remaining_nodes.erase(node);
     }
 
+    // Insert node after the node at pos ({0, 1, 2} -> 1 -> {0, 1, node, 2})
     void insert(unsigned int node, int pos) {
-        cost += get_cost_diff(node, pos);
+        cost += insert_delta(node, pos);
         path.insert(path.begin() + pos + 1, node);
         remaining_nodes.erase(node);
     }
 
-    void commit() { cost += tsp->adj_matrix(path.back(), path.front()); }
+    // Replace node at pos with node ({0, 1, 2} -> 1 -> {0, node, 2})
+    void replace(unsigned int node, int pos) {
+        cost += replace_delta(node, pos);
+        unsigned int old_node = path[pos];
+        path[pos] = node;
+        remaining_nodes.erase(node);
+        remaining_nodes.insert(old_node);
+    }
 
-    int get_cost_diff(unsigned int node, int pos) const {
+    // Swap nodes at pos1 and pos2 ({0, 1, 2} -> 1, 2 -> {0, 2, 1})
+    void swap(int pos1, int pos2) {
+        cost += swap_delta(pos1, pos2);
+        std::swap(path[pos1], path[pos2]);
+    }
+
+    // Reverse path from pos1 to pos2 i.e. swap the edges ({0, 1, 2, 3, 4}
+    // -> 1, 3 -> {0, 3, 2, 1, 4})
+    void reverse(int pos1, int pos2) {
+        cost += reverse_delta(pos1, pos2);
+        std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
+    }
+
+#pragma endregion Operators
+
+#pragma region Cost functions
+    // Cost delta of appending node to the path (see: append)
+    int append_delta(unsigned int node) const {
+        return tsp->adj_matrix(path.back(), node) + tsp->weights[node];
+    }
+
+    // Cost delta of prepending node to the path (see: prepend)
+    int prepend_delta(unsigned int node) const {
+        return tsp->adj_matrix(node, path.front()) + tsp->weights[node];
+    }
+
+    // Cost delta of inserting node at pos (see: insert)
+    int insert_delta(unsigned int node, int pos) const {
         unsigned int a = path[pos];
-        unsigned int b = path[(pos + 1) % path.size()];
+        unsigned int b = path[next(pos)];
         return tsp->weights[node] + tsp->adj_matrix(a, node) +
                tsp->adj_matrix(node, b) - tsp->adj_matrix(a, b);
     }
+
+    // Cost delta of replacing node at pos (see: replace)
+    int replace_delta(unsigned int node, int pos) const {
+        unsigned int old_node = path[pos];
+        unsigned int a = path[prev(pos)];
+        unsigned int b = path[next(pos)];
+
+        return tsp->adj_matrix(a, node) + tsp->adj_matrix(node, b) +
+               tsp->weights[node] - tsp->adj_matrix(a, old_node) -
+               tsp->adj_matrix(old_node, b) - tsp->weights[old_node];
+    }
+
+    // Cost delta of swapping nodes at pos1 and pos2 (see: swap)
+    int swap_delta(int pos1, int pos2) const {
+        unsigned node1 = path[pos1];
+        unsigned node2 = path[pos2];
+
+        unsigned int a1 = path[prev(pos1)];
+        unsigned int b1 = path[next(pos1)];
+        unsigned int a2 = path[prev(pos2)];
+        unsigned int b2 = path[next(pos2)];
+
+        // next to each other
+        if (node2 == b1) {
+            return tsp->adj_matrix(a1, node2) + tsp->adj_matrix(node1, b2) -
+                   tsp->adj_matrix(a1, node1) - tsp->adj_matrix(node2, b2);
+        }
+
+        // loop
+        if (node1 == b2) {
+            return tsp->adj_matrix(a2, node1) + tsp->adj_matrix(node2, b1) -
+                   tsp->adj_matrix(a2, node2) - tsp->adj_matrix(node1, b1);
+        }
+
+        return tsp->adj_matrix(a1, node2) + tsp->adj_matrix(node2, b1) +
+               tsp->adj_matrix(a2, node1) + tsp->adj_matrix(node1, b2) -
+               tsp->adj_matrix(a1, node1) - tsp->adj_matrix(node1, b1) -
+               tsp->adj_matrix(a2, node2) - tsp->adj_matrix(node2, b2);
+    }
+
+    // Cost delta of reversing the path from pos1 to pos2 (see: reverse)
+    int reverse_delta(int pos1, int pos2) const {
+        int a = path[prev(pos1)];
+        int b = path[pos1];
+        int c = path[pos2];
+        int d = path[next(pos2)];
+
+        if (a == c) {
+            return 0;
+        }
+
+        return tsp->adj_matrix(a, c) + tsp->adj_matrix(b, d) -
+               tsp->adj_matrix(a, b) - tsp->adj_matrix(c, d);
+    }
+
+#pragma endregion Cost functions
+
+#pragma region Helpers
+
+    int next(int i) const { return (i + 1) % path.size(); }
+
+    int prev(int i) const { return (i - 1 + path.size()) % path.size(); }
+
+    bool is_valid() const {
+        return std::set(path.begin(), path.end()).size() == path.size() &&
+               path.size() == ceil(tsp->n / 2.0);
+    }
+
+#pragma endregion Helpers
+};
+
+typedef std::pair<unsigned int, int> pos_delta_t;
+
+typedef std::pair<unsigned int, int> node_delta_t;
+
+struct operation_t {
+    solution_t::op_type_t type;
+    unsigned int arg1, arg2;
+    int delta;
 };

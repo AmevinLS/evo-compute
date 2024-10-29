@@ -1,3 +1,5 @@
+#pragma once
+
 #include "types.cpp"
 
 #include <fstream>
@@ -35,7 +37,8 @@ std::ostream &operator<<(std::ostream &os, std::vector<node_t> nodes) {
 }
 
 std::ostream &operator<<(std::ostream &os, solution_t solution) {
-    os << "Cost: " << solution.cost << std::endl;
+    os << "Cost: " << solution.cost << "\tRuntime (ms): " << solution.runtime_ms
+       << "\tSearch iterations: " << solution.search_iters << std::endl;
     os << "Path: ";
 
     for (const unsigned int &node : solution.path) {
@@ -57,11 +60,12 @@ std::ostream &operator<<(std::ostream &os, std::vector<solution_t> solutions) {
 
 std::ofstream &operator<<(std::ofstream &os,
                           std::vector<solution_t> solutions) {
-    os << "idx,cost,path" << std::endl;
+    os << "idx,cost,runtime_ms,search_iters,path" << std::endl;
     int i = 1;
 
     for (const solution_t &solution : solutions) {
-        os << i++ << "," << solution.cost << ",";
+        os << i++ << "," << solution.cost << "," << solution.runtime_ms << ","
+           << solution.search_iters << ",";
 
         for (const unsigned int &node : solution.path) {
             os << node << " ";
