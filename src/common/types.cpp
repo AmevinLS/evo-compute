@@ -212,9 +212,11 @@ struct solution_t {
 
 #pragma region Helpers
 
-    int next(int i) const { return (i + 1) % path.size(); }
+    unsigned next(unsigned i) const { return (i + 1) % path.size(); }
 
-    int prev(int i) const { return (i - 1 + path.size()) % path.size(); }
+    unsigned prev(unsigned i) const {
+        return (i - 1 + path.size()) % path.size();
+    }
 
     bool is_valid() const {
         return std::set(path.begin(), path.end()).size() == path.size() &&
