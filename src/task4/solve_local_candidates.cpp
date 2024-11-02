@@ -1,16 +1,17 @@
-#pragma once
-
 #include "../common/parse.cpp"
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <optional>
 #include <queue>
+#include <stdexcept>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-typedef std::map<unsigned, std::vector<unsigned>> neighbors_t;
+typedef std::unordered_map<unsigned, std::vector<unsigned>> neighbors_t;
 
 neighbors_t get_nearest_neighbors(const tsp_t &tsp, unsigned k_neighbors) {
     struct CompareSecond {
@@ -57,32 +58,55 @@ steepest_candidate_search(const solution_t &sol,
     for (unsigned node_idx = 0; node_idx < sol.path.size(); node_idx++) {
         unsigned node = sol.path[node_idx];
         for (unsigned neighb : neighbors_map.at(node)) {
-            if (sol.remaining_nodes.find(neighb) != sol.remaining_nodes.end()) {
+            if (sol.remaining_nodes.find(neighb) == sol.remaining_nodes.end()) {
                 // Edge Swap (REVERSE) Case
                 unsigned neighb_idx =
                     std::find(sol.path.begin(), sol.path.end(), neighb) -
                     sol.path.begin();
-                int delta1 = sol.reverse_delta(node_idx, neighb_idx);
+                if (neighb_idx == node_idx - 1 || neighb_idx == node_idx + 1)
+                    continue;
+
+                unsigned smaller_idx, bigger_idx;
+                if (node_idx < neighb_idx) {
+                    smaller_idx = node_idx;
+                    bigger_idx = neighb_idx;
+                } else {
+                    smaller_idx = neighb_idx;
+                    bigger_idx = node_idx;
+                }
+                int delta1 =
+                    sol.reverse_delta(sol.next(smaller_idx), bigger_idx);
                 if (delta1 < delta) {
                     delta = delta1;
-                    best_op = operation_t{solution_t::REVERSE, node_idx,
-                                          neighb_idx, delta1};
+                    best_op =
+                        operation_t{solution_t::REVERSE, sol.next(smaller_idx),
+                                    bigger_idx, delta1};
                 }
                 int delta2 =
-                    sol.reverse_delta(sol.prev(node_idx), sol.prev(neighb_idx));
+                    sol.reverse_delta(smaller_idx, sol.prev(bigger_idx));
                 if (delta2 < delta) {
                     delta = delta2;
-                    best_op =
-                        operation_t{solution_t::REVERSE, sol.prev(node_idx),
-                                    sol.prev(neighb_idx), delta2};
+                    best_op = operation_t{solution_t::REVERSE, smaller_idx,
+                                          sol.prev(bigger_idx), delta2};
                 }
             } else {
-                // Edge Replace Case
-                // TODO: implement here and add operation in solution_t
+                // Edge Replace Case (i.e. Node Replace with prev() and next())
+                int delta1 = sol.replace_delta(neighb, sol.prev(node_idx));
+                if (delta1 < delta) {
+                    delta = delta1;
+                    best_op = operation_t{solution_t::REPLACE, neighb,
+                                          sol.prev(node_idx), delta1};
+                }
+                int delta2 = sol.replace_delta(neighb, sol.next(node_idx));
+                if (delta2 < delta) {
+                    delta = delta2;
+                    best_op = operation_t{solution_t::REPLACE, neighb,
+                                          sol.next(node_idx), delta2};
+                }
             }
         }
     }
-    return std::nullopt;
+    return best_op;
 }
 
 solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
@@ -100,9 +124,6 @@ solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
         }
 
         switch (best_op->type) {
-        case solution_t::SWAP:
-            solution.swap(best_op->arg1, best_op->arg2);
-            break;
         case solution_t::REVERSE:
             solution.reverse(best_op->arg1, best_op->arg2);
             break;
@@ -110,7 +131,13 @@ solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
             solution.replace(best_op->arg1, best_op->arg2);
             break;
         default:
+            throw std::logic_error("Invalid operation type");
             break;
+        }
+        if (!solution.is_valid()) {
+            throw std::logic_error("Solution is invalid");
+        } else if (!solution.is_cost_correct()) {
+            throw std::logic_error("Solution cost is incorrect");
         }
     }
 
@@ -122,15 +149,17 @@ std::vector<solution_t> solve_local_candidates_steepest_random(const tsp_t &tsp,
     auto neighbors_map = get_nearest_neighbors(tsp, 10);
     std::vector solutions = solve_random(tsp, n);
     for (auto &sol : solutions) {
+        std::cout << "orig_cost: " << sol.cost << ", ";
         sol = local_candidates_steepest(tsp, sol, neighbors_map);
+        std::cout << "final_cost: " << sol.cost
+                  << ", num_iters: " << sol.search_iters << "\n";
     }
     return solutions;
 }
 
-// Temporary main for testing purposes
 // int main() {
 //     std::ifstream fin("../../data/TSPA.csv");
 //     tsp_t tsp = parse(fin);
-//     auto neighbors = get_nearest_neighbors(tsp, 10);
+//     auto solutions = solve_local_candidates_steepest_random(tsp, 100);
 //     return 0;
 // }

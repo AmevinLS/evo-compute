@@ -1,8 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cmath>
-#include <set>
+#include <stdexcept>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -52,7 +52,7 @@ struct solution_t {
     int runtime_ms;
     int search_iters;
     std::vector<unsigned int> path;
-    std::set<unsigned int> remaining_nodes;
+    std::unordered_set<unsigned int> remaining_nodes;
     const tsp_t *tsp;
 
     solution_t(const tsp_t &tsp, std::vector<unsigned int> path,
@@ -129,6 +129,11 @@ struct solution_t {
     // Reverse path from pos1 to pos2 i.e. swap the edges ({0, 1, 2, 3, 4}
     // -> 1, 3 -> {0, 3, 2, 1, 4})
     void reverse(int pos1, int pos2) {
+        if (pos1 > pos2) {
+            throw std::logic_error(
+                "Trying to reverse from higher to lower pos");
+        }
+
         cost += reverse_delta(pos1, pos2);
         std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
     }
@@ -215,12 +220,23 @@ struct solution_t {
     unsigned next(unsigned i) const { return (i + 1) % path.size(); }
 
     unsigned prev(unsigned i) const {
-        return (i - 1 + path.size()) % path.size();
+        return ((int)i - 1 + path.size()) % path.size();
+    }
+
+    bool is_cost_correct() const {
+        unsigned actual_cost = 0;
+        for (unsigned i = 0; i < path.size() - 1; i++) {
+            actual_cost +=
+                tsp->weights[path[i]] + tsp->adj_matrix(path[i], path[i + 1]);
+        }
+        actual_cost += tsp->weights[path.back()] +
+                       tsp->adj_matrix(path.back(), path.front());
+        return actual_cost == cost;
     }
 
     bool is_valid() const {
-        return std::set(path.begin(), path.end()).size() == path.size() &&
-               path.size() == ceil(tsp->n / 2.0);
+        return std::unordered_set(path.begin(), path.end()).size() ==
+               path.size();
     }
 
 #pragma endregion Helpers
