@@ -1,53 +1,44 @@
-#include "../common/parse.cpp"
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
-#include <fstream>
-#include <iostream>
-#include <map>
+
+#include <algorithm>
+#include <chrono>
+#include <numeric>
 #include <optional>
-#include <queue>
 #include <stdexcept>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
-typedef std::unordered_map<unsigned, std::vector<unsigned>> neighbors_t;
+typedef std::unordered_map<unsigned int, std::vector<unsigned int>> neighbors_t;
 
-neighbors_t get_nearest_neighbors(const tsp_t &tsp, unsigned k_neighbors) {
-    struct CompareSecond {
-        bool operator()(const std::pair<unsigned, unsigned> &a,
-                        const std::pair<unsigned, unsigned> &b) {
-            return a.second < b.second;
+neighbors_t get_nearest_neighbors(const tsp_t &tsp, unsigned k) {
+    neighbors_t nn = {};
+
+    for (unsigned int i = 0; i < tsp.n; i++) {
+        nn[i] = std::vector<unsigned int>(tsp.n);
+        std::iota(nn[i].begin(), nn[i].end(), 0);
+        adj_list_t neighbors = tsp.adj_matrix[i];
+
+        std::transform(neighbors.begin(), neighbors.end(), tsp.weights.begin(),
+                       neighbors.begin(),
+                       [](int dist, int weight) { return dist + weight; });
+        std::stable_sort(
+            nn[i].begin(), nn[i].end(),
+            [&neighbors](int a, int b) { return neighbors[a] < neighbors[b]; });
+
+        for (std::vector<unsigned int>::iterator it = nn[i].begin();
+             it != nn[i].end();) {
+            if (*it == i) {
+                it = nn[i].erase(it);
+            } else {
+                ++it;
+            }
         }
-    };
-    std::map<unsigned,
-             std::priority_queue<std::pair<unsigned, unsigned>,
-                                 std::deque<std::pair<unsigned, unsigned>>,
-                                 CompareSecond>>
-        queues;
 
-    for (unsigned node = 0; node < tsp.n; node++) {
-        queues[node] = {};
+        nn[i].erase(nn[i].begin() + k, nn[i].end());
     }
 
-    for (unsigned node1 = 0; node1 < tsp.n; node1++) {
-        for (unsigned node2 = node1 + 1; node2 < tsp.n; node2++) {
-            unsigned distance = tsp.adj_matrix(node1, node2);
-            queues[node1].push({node2, (distance + tsp.weights[node2])});
-            queues[node2].push({node1, (distance + tsp.weights[node1])});
-        }
-    }
-
-    neighbors_t neighbors;
-    for (unsigned node = 0; node < tsp.n; node++) {
-        neighbors[node] = {};
-        for (unsigned i = 0; i < k_neighbors; i++) {
-            auto [neighb, cost] = queues[node].top();
-            queues[node].pop();
-            neighbors[node].push_back(neighb);
-        }
-    }
-    return neighbors;
+    return nn;
 }
 
 std::optional<operation_t>
@@ -55,6 +46,7 @@ steepest_candidate_search(const solution_t &sol,
                           const neighbors_t &neighbors_map) {
     int delta = 0;
     std::optional<operation_t> best_op;
+
     for (unsigned node_idx = 0; node_idx < sol.path.size(); node_idx++) {
         unsigned node = sol.path[node_idx];
         for (unsigned neighb : neighbors_map.at(node)) {
@@ -111,8 +103,6 @@ steepest_candidate_search(const solution_t &sol,
 
 solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
                                      const neighbors_t &neighbors_map) {
-    std::vector<int> indices;
-
     while (true) {
         std::optional<operation_t> best_op =
             steepest_candidate_search(solution, neighbors_map);
@@ -146,20 +136,15 @@ solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
 
 std::vector<solution_t> solve_local_candidates_steepest_random(const tsp_t &tsp,
                                                                unsigned n) {
-    auto neighbors_map = get_nearest_neighbors(tsp, 10);
-    std::vector solutions = solve_random(tsp, n);
-    for (auto &sol : solutions) {
-        std::cout << "orig_cost: " << sol.cost << ", ";
-        sol = local_candidates_steepest(tsp, sol, neighbors_map);
-        std::cout << "final_cost: " << sol.cost
-                  << ", num_iters: " << sol.search_iters << "\n";
+    neighbors_t neighbors = get_nearest_neighbors(tsp, 10);
+    std::vector<solution_t> solutions = solve_random(tsp, n);
+    for (int i = 0; i < solutions.size(); i++) {
+        const auto start = std::chrono::high_resolution_clock().now();
+        solutions[i] = local_candidates_steepest(tsp, solutions[i], neighbors);
+        solutions[i].runtime_ms +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock().now() - start)
+                .count();
     }
     return solutions;
 }
-
-// int main() {
-//     std::ifstream fin("../../data/TSPA.csv");
-//     tsp_t tsp = parse(fin);
-//     auto solutions = solve_local_candidates_steepest_random(tsp, 100);
-//     return 0;
-// }

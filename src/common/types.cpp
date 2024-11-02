@@ -217,15 +217,19 @@ struct solution_t {
 
 #pragma region Helpers
 
-    unsigned next(unsigned i) const { return (i + 1) % path.size(); }
+    unsigned int next(unsigned int i) const { return (i + 1) % path.size(); }
 
-    unsigned prev(unsigned i) const {
-        return ((int)i - 1 + path.size()) % path.size();
+    unsigned int prev(unsigned int i) const {
+        if (i == 0) {
+            return path.size() - 1;
+        }
+
+        return (i - 1) % path.size();
     }
 
     bool is_cost_correct() const {
-        unsigned actual_cost = 0;
-        for (unsigned i = 0; i < path.size() - 1; i++) {
+        int actual_cost = 0;
+        for (unsigned int i = 0; i < path.size() - 1; i++) {
             actual_cost +=
                 tsp->weights[path[i]] + tsp->adj_matrix(path[i], path[i + 1]);
         }
