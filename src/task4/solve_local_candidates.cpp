@@ -17,10 +17,10 @@ neighbors_t get_nearest_neighbors(const tsp_t &tsp, unsigned k) {
     for (unsigned int i = 0; i < tsp.n; i++) {
         nn[i] = std::vector<unsigned int>(tsp.n);
         std::iota(nn[i].begin(), nn[i].end(), 0);
-        std::vector<int> neighbors(tsp.n);
+        adj_list_t neighbors = tsp.adj_matrix[i];
 
-        std::transform(tsp.adj_matrix[i].begin(), tsp.adj_matrix[i].end(),
-                       tsp.weights.begin(), neighbors.begin(),
+        std::transform(neighbors.cbegin(), neighbors.cend(),
+                       tsp.weights.cbegin(), neighbors.begin(),
                        [](int dist, int weight) { return dist + weight; });
         std::stable_sort(
             nn[i].begin(), nn[i].end(),
