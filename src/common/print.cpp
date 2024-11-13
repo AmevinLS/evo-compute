@@ -8,7 +8,7 @@
 #include <vector>
 
 std::ostream &operator<<(std::ostream &os, adj_list_t list) {
-    int i = 1;
+    int i = 0;
     for (const int &x : list) {
         os << "\t" << i++ << ": " << x << std::endl;
     }
@@ -16,7 +16,7 @@ std::ostream &operator<<(std::ostream &os, adj_list_t list) {
 }
 
 std::ostream &operator<<(std::ostream &os, adj_matrix_t matrix) {
-    int i = 1;
+    int i = 0;
     for (const adj_list_t &row : matrix) {
         os << i++ << ": " << std::endl << row << std::endl;
     }
@@ -29,7 +29,7 @@ std::ostream &operator<<(std::ostream &os, node_t node) {
 }
 
 std::ostream &operator<<(std::ostream &os, std::vector<node_t> nodes) {
-    int i = 1;
+    int i = 0;
     for (const node_t &node : nodes) {
         os << i++ << node << std::endl;
     }
@@ -42,7 +42,7 @@ std::ostream &operator<<(std::ostream &os, solution_t solution) {
     os << "Path: ";
 
     for (const unsigned int &node : solution.path) {
-        os << node + 1 << " ";
+        os << node << " ";
     }
 
     os << std::endl;
@@ -51,7 +51,7 @@ std::ostream &operator<<(std::ostream &os, solution_t solution) {
 }
 
 std::ostream &operator<<(std::ostream &os, std::vector<solution_t> solutions) {
-    int i = 1;
+    int i = 0;
     for (const solution_t &solution : solutions) {
         os << "Solution " << i++ << ":" << std::endl << solution << std::endl;
     }
@@ -61,7 +61,7 @@ std::ostream &operator<<(std::ostream &os, std::vector<solution_t> solutions) {
 std::ofstream &operator<<(std::ofstream &os,
                           std::vector<solution_t> solutions) {
     os << "idx,cost,runtime_ms,search_iters,path" << std::endl;
-    int i = 1;
+    int i = 0;
 
     for (const solution_t &solution : solutions) {
         os << i++ << "," << solution.cost << "," << solution.runtime_ms << ","

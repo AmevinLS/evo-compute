@@ -148,10 +148,8 @@ std::vector<solution_t> solve_local_search(const tsp_t &tsp, unsigned int n,
 
     for (unsigned int i = 0; i < solutions.size(); i++) {
         const auto start = std::chrono::high_resolution_clock().now();
-        int old_runtime_ms = solutions[i].runtime_ms;
         solutions[i] = solve_local_search(solutions[i], op_type, search_type);
-        solutions[i].runtime_ms =
-            old_runtime_ms +
+        solutions[i].runtime_ms +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::high_resolution_clock().now() - start)
                 .count();
