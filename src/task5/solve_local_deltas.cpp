@@ -224,6 +224,7 @@ steepest_deltas_search(const solution_t &solution, oper_list_t &oper_pq,
             continue;
         } else if (verdict == edge_tracker_t::USE) {
             best_op_info = *iter;
+            iters_to_remove.push(iter);
             break;
         }
     }
