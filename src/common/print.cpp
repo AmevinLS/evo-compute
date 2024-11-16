@@ -76,3 +76,9 @@ std::ofstream &operator<<(std::ofstream &os,
 
     return os;
 }
+
+std::ofstream &operator<<(std::ofstream &os, const operation_t &oper) {
+    os << "{delta=" << oper.delta << ", arg1=" << oper.arg1
+       << ", arg2=" << oper.arg2 << ", type=" << oper.type << "}";
+    return os;
+}

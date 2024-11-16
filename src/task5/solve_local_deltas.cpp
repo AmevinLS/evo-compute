@@ -30,8 +30,7 @@ struct oper_info_t {
 
 inline bool operator==(const oper_info_t &lhs, const oper_info_t &rhs) {
     bool edges_equal =
-        (lhs.rem_edge1 == rhs.rem_edge1 && lhs.rem_edge2 == rhs.rem_edge2) ||
-        (lhs.rem_edge1 == rhs.rem_edge2 && lhs.rem_edge2 == rhs.rem_edge1);
+        (lhs.rem_edge1 == rhs.rem_edge1 && lhs.rem_edge2 == rhs.rem_edge2);
     return lhs.delta == rhs.delta && edges_equal &&
            lhs.new_node == rhs.new_node;
 }
@@ -64,7 +63,7 @@ void update_list_with_new_opers(const solution_t &sol, oper_list_t &oper_list) {
                     edge_t{sol.path[j], sol.path[sol.next(j)]}, std::nullopt});
         }
 
-        for (auto node : sol.remaining_nodes) {
+        for (unsigned node : sol.remaining_nodes) {
             // REPLACE operation
             int op_delta = sol.replace_delta(node, i);
             if (op_delta < 0)
@@ -156,7 +155,7 @@ struct edge_tracker_t {
     verdict_t check(const oper_info_t &oper_info) const {
         // Handle case when new_node already in solution
         if (oper_info.new_node.has_value() &&
-            solution.remaining_nodes.count(oper_info.new_node.value()) > 0)
+            solution.remaining_nodes.count(oper_info.new_node.value()) == 0)
             return REMOVE;
 
         auto edge_iter1 = edges_in_sol.find(oper_info.rem_edge1);
@@ -173,7 +172,7 @@ struct edge_tracker_t {
             return LEAVE;
 
         // Handle case 1->2->3, and we want to swap 1->2 and 2->3
-        if (oper_info.new_node.has_value() &&
+        if (!oper_info.new_node.has_value() &&
             (get_node_idx(solution, edge_iter1->to) ==
                  get_node_idx(solution, edge_iter2->from) ||
              get_node_idx(solution, edge_iter1->from) ==
