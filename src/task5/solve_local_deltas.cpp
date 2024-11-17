@@ -40,22 +40,22 @@ inline bool operator!=(const oper_info_t &lhs, const oper_info_t &rhs) {
     return !(lhs == rhs);
 }
 
-oper_info_t get_reverse_op_info(const solution_t &sol, unsigned idx1,
-                                unsigned idx2, int delta) {
+inline oper_info_t get_reverse_op_info(const solution_t &sol, unsigned idx1,
+                                       unsigned idx2, int delta) {
     return oper_info_t{delta, edge_t{sol.path[sol.prev(idx1)], sol.path[idx1]},
                        edge_t{sol.path[idx2], sol.path[sol.next(idx2)]},
                        std::nullopt};
 }
 
-oper_info_t get_replace_op_info(const solution_t &sol, unsigned node,
-                                unsigned pos, int delta) {
+inline oper_info_t get_replace_op_info(const solution_t &sol, unsigned node,
+                                       unsigned pos, int delta) {
     return oper_info_t{delta, edge_t{sol.path[sol.prev(pos)], sol.path[pos]},
                        edge_t{sol.path[pos], sol.path[sol.next(pos)]}, node};
 }
 
-std::pair<unsigned, unsigned> swap_edges_to_reverse_args(const solution_t &sol,
-                                                         unsigned edge_idx1,
-                                                         unsigned edge_idx2) {
+inline std::pair<unsigned, unsigned>
+swap_edges_to_reverse_args(const solution_t &sol, unsigned edge_idx1,
+                           unsigned edge_idx2) {
     if (edge_idx1 == edge_idx2)
         throw std::invalid_argument("Cannot swap an edge with itself");
     if (edge_idx1 > edge_idx2)
@@ -71,8 +71,8 @@ struct oper_queue_t {
     // Comparator for `oper_pq_t`
     class OperInfoCompare {
       public:
-        bool operator()(const oper_info_t &left,
-                        const oper_info_t &right) const {
+        inline bool operator()(const oper_info_t &left,
+                               const oper_info_t &right) const {
             if (left.delta == right.delta) {
                 return left != right;
             }
@@ -89,14 +89,14 @@ struct oper_queue_t {
                 // REVERSE operation
                 int op_delta = sol.reverse_delta(i, j);
                 if (op_delta < 0)
-                    oper_list.insert(get_reverse_op_info(sol, i, j, op_delta));
+                    oper_list.emplace(get_reverse_op_info(sol, i, j, op_delta));
             }
 
             for (unsigned node : sol.remaining_nodes) {
                 // REPLACE operation
                 int op_delta = sol.replace_delta(node, i);
                 if (op_delta < 0)
-                    oper_list.insert(
+                    oper_list.emplace(
                         get_replace_op_info(sol, node, i, op_delta));
             }
         }
@@ -111,7 +111,7 @@ struct oper_queue_t {
                 swap_edges_to_reverse_args(new_sol, new_edge_idx, edge_idx);
             int delta = new_sol.reverse_delta(idx1, idx2);
             if (delta < 0)
-                oper_list.insert(
+                oper_list.emplace(
                     get_reverse_op_info(new_sol, idx1, idx2, delta));
         }
 
@@ -119,7 +119,7 @@ struct oper_queue_t {
             for (unsigned idx : {new_edge_idx, new_sol.next(new_edge_idx)}) {
                 int delta = new_sol.replace_delta(node, idx);
                 if (delta < 0)
-                    oper_list.insert(
+                    oper_list.emplace(
                         get_replace_op_info(new_sol, node, idx, delta));
             }
         }
@@ -133,8 +133,6 @@ struct oper_queue_t {
                  edge_idx != new_sol.next(last_oper.arg2);
                  edge_idx = new_sol.next(edge_idx))
                 update_from_new_edge(new_sol, edge_idx);
-            // update_from_new_edge(new_sol, new_sol.prev(last_oper.arg1));
-            // update_from_new_edge(new_sol, last_oper.arg2);
         } else if (last_oper.type == solution_t::REPLACE) {
             assert(removed_node.has_value());
             update_from_new_edge(new_sol, new_sol.prev(last_oper.arg2));
@@ -142,7 +140,7 @@ struct oper_queue_t {
             for (unsigned pos = 0; pos < new_sol.path.size(); pos++) {
                 int delta = new_sol.replace_delta(removed_node.value(), pos);
                 if (delta < 0)
-                    oper_list.insert(get_replace_op_info(
+                    oper_list.emplace(get_replace_op_info(
                         new_sol, removed_node.value(), pos, delta));
             }
         } else {
@@ -162,7 +160,7 @@ inline std::optional<unsigned> get_node_idx(const solution_t &sol,
 
 struct edge_tracker_t {
     struct UndirectedEdgeHash {
-        std::size_t operator()(const edge_t &edge) const {
+        inline std::size_t operator()(const edge_t &edge) const {
             unsigned a, b;
             if (edge.from < edge.to) {
                 a = edge.from;
@@ -179,23 +177,23 @@ struct edge_tracker_t {
     enum verdict_t { REMOVE, LEAVE, USE };
 
     std::unordered_set<edge_t, UndirectedEdgeHash> edges_in_sol;
-    const solution_t &solution;
 
-    edge_tracker_t(const solution_t &solution)
-        : edges_in_sol(solution_to_edges(solution)), solution(solution) {}
+    inline edge_tracker_t(const solution_t &solution)
+        : edges_in_sol(solution_to_edges(solution)) {}
 
-    std::unordered_set<edge_t, UndirectedEdgeHash>
+    inline static std::unordered_set<edge_t, UndirectedEdgeHash>
     solution_to_edges(const solution_t &solution) {
         std::unordered_set<edge_t, UndirectedEdgeHash> edge_set;
+        edge_set.reserve(solution.path.size());
         for (unsigned i = 1; i < solution.path.size(); i++) {
-            edge_set.insert(
+            edge_set.emplace(
                 edge_t{solution.path[solution.prev(i)], solution.path[i]});
         }
-        edge_set.insert(edge_t{solution.path.back(), solution.path.front()});
+        edge_set.emplace(edge_t{solution.path.back(), solution.path.front()});
         return edge_set;
     }
 
-    void update() {
+    inline void update(const solution_t &solution) {
         edges_in_sol = solution_to_edges(solution);
 
         // edges_in_sol.erase(oper_info.rem_edge1);
@@ -218,7 +216,8 @@ struct edge_tracker_t {
         //     size");
     }
 
-    static bool edges_same_direction(const edge_t &edge1, const edge_t &edge2) {
+    inline static bool edges_same_direction(const edge_t &edge1,
+                                            const edge_t &edge2) {
         if (edge1.from == edge2.from && edge1.to == edge2.to)
             return true;
         else if (edge1.from == edge2.to && edge1.to == edge2.from)
@@ -229,10 +228,10 @@ struct edge_tracker_t {
                 "edges with differing nodes");
     }
 
-    verdict_t check(const oper_info_t &oper_info) const {
+    verdict_t check(const solution_t &sol, const oper_info_t &oper_info) const {
         // Handle case when new_node already in solution
         if (oper_info.new_node.has_value() &&
-            solution.remaining_nodes.count(oper_info.new_node.value()) == 0)
+            sol.remaining_nodes.count(oper_info.new_node.value()) == 0)
             return REMOVE;
 
         auto edge_iter1 = edges_in_sol.find(oper_info.rem_edge1);
@@ -250,10 +249,10 @@ struct edge_tracker_t {
 
         // Handle case 1->2->3, and we want to swap 1->2 and 2->3
         if (!oper_info.new_node.has_value() &&
-            (get_node_idx(solution, edge_iter1->to) ==
-                 get_node_idx(solution, edge_iter2->from) ||
-             get_node_idx(solution, edge_iter1->from) ==
-                 get_node_idx(solution, edge_iter2->to)))
+            (get_node_idx(sol, edge_iter1->to) ==
+                 get_node_idx(sol, edge_iter2->from) ||
+             get_node_idx(sol, edge_iter1->from) ==
+                 get_node_idx(sol, edge_iter2->to)))
             return LEAVE;
 
         return USE;
@@ -294,7 +293,7 @@ steepest_deltas_search(const solution_t &solution, oper_queue_t &oper_pq,
         iters_to_remove; // Stack is to start removing elems from the end
     for (auto iter = oper_pq.oper_list.begin(); iter != oper_pq.oper_list.end();
          iter++) {
-        edge_tracker_t::verdict_t verdict = edge_tracker.check(*iter);
+        edge_tracker_t::verdict_t verdict = edge_tracker.check(solution, *iter);
         if (verdict == edge_tracker_t::REMOVE) {
             iters_to_remove.push(iter);
             continue;
@@ -348,7 +347,7 @@ solution_t local_deltas_steepest(const tsp_t &tsp, solution_t solution) {
             throw std::logic_error("Invalid operation type");
             break;
         }
-        edge_tracker.update();
+        edge_tracker.update(solution);
         if (!solution.is_valid()) {
             throw std::logic_error("Solution is invalid");
         } else if (!solution.is_cost_correct()) {
