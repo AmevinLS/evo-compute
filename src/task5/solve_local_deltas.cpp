@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <optional>
 #include <set>
@@ -125,18 +126,24 @@ struct oper_queue_t {
     }
 
     void update_with_oper(const solution_t &new_sol,
-                          const operation_t &last_oper) {
+                          const operation_t &last_oper,
+                          std::optional<unsigned> removed_node = std::nullopt) {
         if (last_oper.type == solution_t::REVERSE) {
-            update_from_new_edge(new_sol, new_sol.prev(last_oper.arg1));
-            update_from_new_edge(new_sol, last_oper.arg2);
+            for (unsigned edge_idx = new_sol.prev(last_oper.arg1);
+                 edge_idx != new_sol.next(last_oper.arg2);
+                 edge_idx = new_sol.next(edge_idx))
+                update_from_new_edge(new_sol, edge_idx);
+            // update_from_new_edge(new_sol, new_sol.prev(last_oper.arg1));
+            // update_from_new_edge(new_sol, last_oper.arg2);
         } else if (last_oper.type == solution_t::REPLACE) {
+            assert(removed_node.has_value());
             update_from_new_edge(new_sol, new_sol.prev(last_oper.arg2));
             update_from_new_edge(new_sol, last_oper.arg2);
             for (unsigned pos = 0; pos < new_sol.path.size(); pos++) {
-                int delta = new_sol.replace_delta(last_oper.arg1, pos);
+                int delta = new_sol.replace_delta(removed_node.value(), pos);
                 if (delta < 0)
                     oper_list.insert(get_replace_op_info(
-                        new_sol, last_oper.arg1, pos, delta));
+                        new_sol, removed_node.value(), pos, delta));
             }
         } else {
             throw std::logic_error("Unpermitted operation happened");
@@ -329,16 +336,19 @@ solution_t local_deltas_steepest(const tsp_t &tsp, solution_t solution) {
         switch (best_op->type) {
         case solution_t::REVERSE:
             solution.reverse(best_op->arg1, best_op->arg2);
+            oper_pq.update_with_oper(solution, best_op.value());
             break;
-        case solution_t::REPLACE:
+        case solution_t::REPLACE: {
+            unsigned removed_node = solution.path[best_op->arg2];
             solution.replace(best_op->arg1, best_op->arg2);
+            oper_pq.update_with_oper(solution, best_op.value(), removed_node);
             break;
+        }
         default:
             throw std::logic_error("Invalid operation type");
             break;
         }
         edge_tracker.update();
-        oper_pq.update_with_oper(solution, best_op.value());
         if (!solution.is_valid()) {
             throw std::logic_error("Solution is invalid");
         } else if (!solution.is_cost_correct()) {
