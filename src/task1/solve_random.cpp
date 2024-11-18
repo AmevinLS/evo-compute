@@ -15,8 +15,7 @@ std::vector<solution_t> solve_random(const tsp_t &tsp, unsigned int path_size) {
     std::set<std::vector<unsigned int>> seen;
     std::vector<solution_t> solutions;
 
-    std::random_device rd;
-    std::mt19937 g(rd());
+    std::mt19937 g((std::random_device()()));
     while (solutions.size() < tsp.n) {
         const auto start = std::chrono::high_resolution_clock().now();
         std::shuffle(indices.begin(), indices.end(), g);

@@ -118,6 +118,10 @@ struct solution_t {
         path[pos] = node;
         remaining_nodes.erase(node);
         remaining_nodes.insert(old_node);
+        // if (!is_valid())
+        //     throw std::logic_error("Is invalid");
+        // if (!is_cost_correct())
+        //     throw std::logic_error("Cost isn't correct");
     }
 
     // Swap nodes at pos1 and pos2 ({0, 1, 2} -> 1, 2 -> {0, 2, 1})
@@ -136,6 +140,10 @@ struct solution_t {
 
         cost += reverse_delta(pos1, pos2);
         std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
+        // if (!is_valid())
+        //     throw std::logic_error("Is invalid");
+        // if (!is_cost_correct())
+        //     throw std::logic_error("Cost isn't correct");
     }
 
 #pragma endregion Operators
