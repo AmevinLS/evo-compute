@@ -9,6 +9,15 @@
 #include <set>
 #include <vector>
 
+solution_t gen_random_solution(const tsp_t &tsp, unsigned path_size) {
+    std::vector<unsigned> nodes(tsp.n);
+    std::iota(nodes.begin(), nodes.end(), 0);
+
+    std::mt19937 gen((std::random_device()()));
+    std::shuffle(nodes.begin(), nodes.end(), gen);
+    return solution_t(tsp, nodes);
+}
+
 std::vector<solution_t> solve_random(const tsp_t &tsp, unsigned int path_size) {
     std::vector<unsigned int> indices(tsp.n);
     std::iota(indices.begin(), indices.end(), 0);
