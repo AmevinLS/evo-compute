@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include "../task2/solve_greedy_regret.cpp"
