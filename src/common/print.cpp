@@ -4,35 +4,41 @@
 
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <ostream>
 #include <vector>
 
-std::ostream &operator<<(std::ostream &os, adj_list_t list) {
-    int i = 0;
+std::ostream &operator<<(std::ostream &os, const adj_list_t list) {
     for (const int &x : list) {
-        os << "\t" << i++ << ": " << x << std::endl;
+        os << x << ", ";
     }
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, adj_matrix_t matrix) {
+std::ostream &operator<<(std::ostream &os, const adj_matrix_t matrix) {
     int i = 0;
     for (const adj_list_t &row : matrix) {
-        os << i++ << ": " << std::endl << row << std::endl;
+        os << i++ << ": " << std::endl << "\t" << row << std::endl << std::endl;
     }
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, node_t node) {
-    os << "(" << node.x << ", " << node.y << ") weight: " << node.weight;
+std::ostream &operator<<(std::ostream &os, const node_t node) {
+    os << "\t(" << node.x << ", " << node.y << ") weight: " << node.weight;
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, std::vector<node_t> nodes) {
+std::ostream &operator<<(std::ostream &os, const std::vector<node_t> nodes) {
     int i = 0;
     for (const node_t &node : nodes) {
         os << i++ << node << std::endl;
     }
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const tsp_t tsp) {
+    os << "Nodes: " << std::endl << tsp.nodes << std::endl;
+    os << "Adjacency matrix: " << std::endl << tsp.adj_matrix << std::endl;
     return os;
 }
 
@@ -42,7 +48,7 @@ std::ostream &operator<<(std::ostream &os, solution_t solution) {
     os << "Path: ";
 
     for (const unsigned int &node : solution.path) {
-        os << node << " ";
+        os << node << ", ";
     }
 
     os << std::endl;
@@ -50,16 +56,61 @@ std::ostream &operator<<(std::ostream &os, solution_t solution) {
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, std::vector<solution_t> solutions) {
+std::ostream &operator<<(std::ostream &os,
+                         const std::vector<solution_t> solutions) {
+    os << "Found " << solutions.size() << " solutions" << std::endl;
+
+    if (solutions.empty()) {
+        return os;
+    }
+
+    os << std::endl << "Solutions:" << std::endl;
+
     int i = 0;
     for (const solution_t &solution : solutions) {
         os << "Solution " << i++ << ":" << std::endl << solution << std::endl;
     }
+
+    os << std::endl;
+
+    std::optional<solution_t> best;
+    int min_cost = INT_MAX, min_time = INT_MAX, max_cost = 0, max_time = 0;
+    double avg_cost = 0, avg_time = 0;
+
+    for (const solution_t &solution : solutions) {
+        avg_cost += solution.cost;
+        avg_time += solution.runtime_ms;
+        if (solution.cost < min_cost) {
+            min_cost = solution.cost;
+            best = solution;
+        }
+        if (solution.cost > max_cost) {
+            max_cost = solution.cost;
+        }
+        if (solution.runtime_ms < min_time) {
+            min_time = solution.runtime_ms;
+        }
+        if (solution.runtime_ms > max_time) {
+            max_time = solution.runtime_ms;
+        }
+    }
+
+    os << "Stats:" << std::endl;
+    os << "Cost: " << min_cost << " / " << avg_cost / solutions.size() << " / "
+       << max_cost << std::endl;
+    os << "Runtime (ms): " << min_time << " / " << avg_time / solutions.size()
+       << " / " << max_time << std::endl;
+    os << std::endl;
+
+    if (best.has_value()) {
+        os << "Best solution:" << std::endl << best.value() << std::endl;
+    }
+
     return os;
 }
 
 std::ofstream &operator<<(std::ofstream &os,
-                          std::vector<solution_t> solutions) {
+                          const std::vector<solution_t> solutions) {
     os << "idx,cost,runtime_ms,search_iters,path" << std::endl;
     int i = 0;
 
@@ -77,8 +128,8 @@ std::ofstream &operator<<(std::ofstream &os,
     return os;
 }
 
-std::ofstream &operator<<(std::ofstream &os, const operation_t &oper) {
-    os << "{delta=" << oper.delta << ", arg1=" << oper.arg1
-       << ", arg2=" << oper.arg2 << ", type=" << oper.type << "}";
+std::ofstream &operator<<(std::ofstream &os, const operation_t &op) {
+    os << "{delta=" << op.delta << ", arg1=" << op.arg1 << ", arg2=" << op.arg2
+       << ", type=" << op.type << "}";
     return os;
 }
