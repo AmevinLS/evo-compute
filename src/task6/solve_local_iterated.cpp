@@ -72,3 +72,13 @@ solution_t solve_local_iterated_search(solution_t solution,
     }
     return curr_sol;
 }
+
+solution_t solve_local_multiple_start(const tsp_t &tsp, unsigned int n) {
+    std::vector<solution_t> solutions =
+        solve_local_search(tsp, n, solution_t::REVERSE, STEEPEST);
+    std::sort(solutions.begin(), solutions.end(),
+              [](const solution_t &s1, const solution_t &s2) {
+                  return s1.cost < s2.cost;
+              });
+    return solutions[0];
+}
