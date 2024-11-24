@@ -1,9 +1,11 @@
 #pragma once
 
 #include <random>
+#include <vector>
 
 #include "../common/types.cpp"
 #include "../task3/solve_local_search.cpp"
+#include "solve_local_multiple.cpp"
 
 int random_num(int start, int end) {
     std::random_device rd;  // obtain a random number from hardware
@@ -40,8 +42,8 @@ void perturb_solution(solution_t &solution, unsigned int alterations = 10,
     }
 }
 
-solution_t solve_local_iterated_search(const tsp_t &tsp, unsigned int path_size,
-                                       unsigned int time_limit_ms) {
+solution_t local_search_iterated(const tsp_t &tsp, unsigned int path_size,
+                                 unsigned int time_limit_ms) {
     int best_cost = INT_MAX;
     solution_t solution = gen_random_solution(tsp, path_size);
     solution_t best = solution;
@@ -62,12 +64,26 @@ solution_t solve_local_iterated_search(const tsp_t &tsp, unsigned int path_size,
     return best;
 }
 
-solution_t solve_local_multiple_start(const tsp_t &tsp, unsigned int n) {
-    std::vector<solution_t> solutions =
-        solve_local_search(tsp, n, solution_t::REVERSE, STEEPEST);
-    std::sort(solutions.begin(), solutions.end(),
-              [](const solution_t &s1, const solution_t &s2) {
-                  return s1.cost < s2.cost;
-              });
-    return solutions[0];
+std::vector<solution_t> solve_local_search_iterated(const tsp_t &tsp,
+                                                    unsigned int path_size) {
+    std::vector<solution_t> mslp_solutions =
+        solve_local_search_multiple_start(tsp, path_size);
+    int time_limit_ms =
+        std::accumulate(mslp_solutions.begin(), mslp_solutions.end(), 0,
+                        [](int val, const solution_t &sol) {
+                            return val + sol.runtime_ms;
+                        }) /
+        mslp_solutions.size();
+
+    std::vector<solution_t> solutions;
+    solutions.reserve(20);
+    timer_t timer;
+    for (unsigned int i = 0; i < 20; i++) {
+        timer.start();
+        solutions.push_back(
+            local_search_iterated(tsp, path_size, time_limit_ms));
+        solutions.back().runtime_ms = timer.measure();
+    }
+
+    return solutions;
 }

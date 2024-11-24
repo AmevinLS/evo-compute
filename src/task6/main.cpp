@@ -19,7 +19,7 @@ int main() {
     std::vector<solution_t> solutions_msls;
     for (unsigned i = 0; i < NUM_RUNS; i++) {
         timer.start();
-        solution_t sol = solve_local_multiple_start(tsp, PATH_SIZE);
+        solution_t sol = local_search_multiple_start(tsp, PATH_SIZE);
         sol.runtime_ms = timer.measure();
         solutions_msls.push_back(sol);
         std::cout << "MSLS " << i << ": " << sol.cost << "\n";
@@ -36,7 +36,7 @@ int main() {
     for (unsigned i = 0; i < NUM_RUNS; i++) {
         timer.start();
         solution_t iterated_sol =
-            solve_local_iterated_search(tsp, PATH_SIZE, avg_msls_duration);
+            local_search_iterated(tsp, PATH_SIZE, avg_msls_duration);
         iterated_sol.runtime_ms = timer.measure();
         solutions_iter.push_back(iterated_sol);
         std::cout << "Iterated " << i << ": " << iterated_sol.cost << "\n";
