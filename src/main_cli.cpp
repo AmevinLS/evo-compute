@@ -92,11 +92,7 @@ int parse_main(int argc, char **argv) {
     std::cout << tsp.n << " nodes" << std::endl;
 
     if (verbose) {
-        std::cout << "Nodes:" << std::endl;
-        std::cout << tsp.weights << std::endl;
-        std::cout << std::endl;
-        std::cout << "Adjacency matrix:" << std::endl;
-        std::cout << tsp.adj_matrix << std::endl;
+        std::cout << tsp << std::endl;
     }
 
     return 0;
@@ -170,23 +166,7 @@ int solve_main(int argc, char **argv) {
 
     tsp_t tsp = parse(in.value());
     std::vector solutions = solve(tsp, heuristic);
-
-    std::cout << "Solutions:" << std::endl;
-    std::cout << solutions << std::endl;
-    std::cout << std::endl
-              << std::endl
-              << "Found " << solutions.size() << " solutions" << std::endl;
-    auto best = std::min_element(
-        solutions.begin(), solutions.end(),
-        [](solution_t a, solution_t b) { return a.cost < b.cost; });
-
-    if (best == solutions.end()) {
-        std::cerr << ERROR << " failed to find best solution" << std::endl;
-        return 1;
-    }
-
-    std::cout << "Best solution:" << std::endl;
-    std::cout << *best << std::endl;
+    std::cout << solutions;
 
     return 0;
 }
