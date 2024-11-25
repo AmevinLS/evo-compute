@@ -50,6 +50,7 @@ solution_t local_search_iterated(const tsp_t &tsp, unsigned int path_size,
     timer_t timer;
 
     timer.start();
+    int i = 1;
     while (timer.measure() < time_limit_ms) {
         solution = solve_local_search(solution, solution_t::REVERSE, STEEPEST);
 
@@ -59,8 +60,10 @@ solution_t local_search_iterated(const tsp_t &tsp, unsigned int path_size,
         }
 
         perturb_solution(solution);
+        i++;
     }
 
+    best.search_iters = i;
     return best;
 }
 
