@@ -24,6 +24,7 @@ std::vector<solution_t> solve_local_search_multiple_start(const tsp_t &tsp,
         timer.start();
         solutions.push_back(local_search_multiple_start(tsp, n));
         solutions.back().runtime_ms = timer.measure();
+        solutions.back().search_iters = tsp.n;
     }
     return solutions;
 }
