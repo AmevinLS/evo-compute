@@ -114,6 +114,13 @@ struct solution_t {
         remaining_nodes.erase(node);
     }
 
+    // Delete node at pos ({0, 1, 2} -> 1 -> {0, 2})
+    void remove_node(unsigned pos) {
+        cost += remove_node_delta(pos);
+        remaining_nodes.insert(path[pos]);
+        path.erase(path.begin() + pos);
+    }
+
     // Replace node at pos with node ({0, 1, 2} -> 1 -> {0, node, 2})
     void replace(unsigned int node, int pos) {
         cost += replace_delta(node, pos);
@@ -168,6 +175,14 @@ struct solution_t {
         unsigned int b = path[next(pos)];
         return tsp->weights[node] + tsp->adj_matrix(a, node) +
                tsp->adj_matrix(node, b) - tsp->adj_matrix(a, b);
+    }
+
+    int remove_node_delta(unsigned pos) {
+        unsigned a = path[prev(pos)];
+        unsigned b = path[pos];
+        unsigned c = path[next(pos)];
+        return tsp->adj_matrix(a, c) - tsp->adj_matrix(a, b) -
+               tsp->adj_matrix(b, c) - tsp->weights[b];
     }
 
     // Cost delta of replacing node at pos (see: replace)

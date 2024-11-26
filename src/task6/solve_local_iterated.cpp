@@ -1,18 +1,10 @@
 #pragma once
 
-#include <random>
 #include <vector>
 
 #include "../common/types.cpp"
 #include "../task3/solve_local_search.cpp"
 #include "solve_local_multiple.cpp"
-
-int random_num(int start, int end) {
-    std::random_device rd;  // obtain a random number from hardware
-    std::mt19937 gen(rd()); // seed the generator
-    std::uniform_int_distribution<> distr(start, end - 1); // define the range
-    return distr(gen);
-}
 
 // Perturb the solution in-place
 void perturb_solution(solution_t &solution, unsigned int alterations = 10,

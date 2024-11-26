@@ -9,6 +9,13 @@
 #include <set>
 #include <vector>
 
+int random_num(int start, int end) {
+    std::random_device rd;  // obtain a random number from hardware
+    std::mt19937 gen(rd()); // seed the generator
+    std::uniform_int_distribution<> distr(start, end - 1); // define the range
+    return distr(gen);
+}
+
 solution_t gen_random_solution(const tsp_t &tsp, unsigned path_size) {
     std::vector<unsigned> nodes(tsp.n);
     std::iota(nodes.begin(), nodes.end(), 0);
