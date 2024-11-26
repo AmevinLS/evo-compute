@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <chrono>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -12,7 +13,7 @@ struct node_t {
     int weight;
 };
 
-typedef std::vector<int> adj_list_t;
+typedef std::vector<int> adj_list_t; // list of weights
 
 struct adj_matrix_t {
     using matrix_t = std::vector<adj_list_t>;
@@ -36,13 +37,15 @@ struct adj_matrix_t {
 
 struct tsp_t {
     unsigned int n;
+    std::vector<node_t> nodes;
     std::vector<int> weights;
     adj_matrix_t adj_matrix;
 
     tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
-        : n(nodes.size()), weights(), adj_matrix(adj_matrix) {
-        for (auto &node : nodes) {
-            weights.push_back(node.weight);
+        : n(nodes.size()), nodes(nodes), weights(nodes.size(), 0),
+          adj_matrix(adj_matrix) {
+        for (int i = 0; i < n; i++) {
+            weights[i] = nodes[i].weight;
         }
     }
 };
@@ -262,4 +265,17 @@ struct operation_t {
     solution_t::op_type_t type;
     unsigned int arg1, arg2;
     int delta;
+};
+
+struct timer_t {
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+
+    void start() { start_time = std::chrono::high_resolution_clock::now(); }
+
+    int measure() {
+        auto end_time = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end_time -
+                                                                     start_time)
+            .count();
+    }
 };
