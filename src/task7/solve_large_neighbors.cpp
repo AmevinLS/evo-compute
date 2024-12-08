@@ -1,15 +1,23 @@
+#include "../common/random.cpp"
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include "../task2/solve_greedy_regret.cpp"
 #include "../task3/solve_local_search.cpp"
 #include "../task6/solve_local_multiple.cpp"
+
 #include <vector>
 
 solution_t destroy_solution(solution_t sol) {
     int num_nodes_to_remove = sol.path.size() * 0.25;
+    std::vector<int> weights = std::vector(sol.path.size(), 1);
+
+    for (int i = 0; i < sol.path.size(); i++) {
+        weights[i] = sol.tsp->weights[sol.path[i]];
+    }
 
     for (int i = 0; i < num_nodes_to_remove; i++) {
-        int idx_to_remove = random_num(0, sol.path.size());
+        int idx_to_remove = random_num(weights);
+        weights.erase(weights.begin() + idx_to_remove);
         sol.remove(idx_to_remove);
     }
 
@@ -18,14 +26,10 @@ solution_t destroy_solution(solution_t sol) {
 
 solution_t large_neighborhood_search(const tsp_t &tsp, unsigned int path_size,
                                      unsigned int time_limit_ms, bool ls) {
-    solution_t solution = gen_random_solution(tsp, path_size);
-
-    if (ls) {
-        solution = solve_local_search(solution, solution_t::REVERSE, STEEPEST);
-    }
-
-    timer_t timer;
+    solution_t solution = solve_local_search(
+        gen_random_solution(tsp, path_size), solution_t::REVERSE, STEEPEST);
     solution_t best = solution;
+    timer_t timer;
     int i = 1;
 
     timer.start();

@@ -2,9 +2,10 @@
 
 #include <vector>
 
+#include "../common/random.cpp"
 #include "../common/types.cpp"
 #include "../task3/solve_local_search.cpp"
-#include "solve_local_multiple.cpp"
+#include "../task6/solve_local_multiple.cpp"
 
 // Perturb the solution in-place
 void perturb_solution(solution_t &solution, unsigned int alterations = 10,
