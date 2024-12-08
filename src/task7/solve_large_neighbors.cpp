@@ -6,33 +6,38 @@
 #include <vector>
 
 solution_t destroy_solution(solution_t sol) {
-    unsigned num_nodes_to_remove =
-        static_cast<unsigned>(sol.path.size() * 0.25);
+    int num_nodes_to_remove = sol.path.size() * 0.25;
 
-    for (unsigned i = 0; i < num_nodes_to_remove; i++) {
-        unsigned idx_to_remove = random_num(0, sol.path.size());
-        sol.remove_node(idx_to_remove);
+    for (int i = 0; i < num_nodes_to_remove; i++) {
+        int idx_to_remove = random_num(0, sol.path.size());
+        sol.remove(idx_to_remove);
     }
+
     return sol;
 }
 
 solution_t large_neighborhood_search(const tsp_t &tsp, unsigned int path_size,
-                                     unsigned int time_limit_ms,
-                                     bool ls_after_repair) {
+                                     unsigned int time_limit_ms, bool ls) {
     solution_t solution = gen_random_solution(tsp, path_size);
 
+    if (ls) {
+        solution = solve_local_search(solution, solution_t::REVERSE, STEEPEST);
+    }
+
     timer_t timer;
-    timer.start();
-    solution = solve_local_search(solution, solution_t::REVERSE, STEEPEST);
     solution_t best = solution;
     int i = 1;
+
+    timer.start();
     while (timer.measure() < time_limit_ms) {
         solution = destroy_solution(best); // Destroy solution
         solution =
             solve_regret(solution, path_size, REGRET_WEIGHT); // Repair solution
-        if (ls_after_repair)
+
+        if (ls) {
             solution =
                 solve_local_search(solution, solution_t::REVERSE, STEEPEST);
+        }
 
         if (solution.cost < best.cost) {
             best = solution;
@@ -68,4 +73,14 @@ std::vector<solution_t> solve_large_neighborhood_search(const tsp_t &tsp,
         solutions.back().search_iters = tsp.n;
     }
     return solutions;
+}
+
+std::vector<solution_t>
+solve_large_neighborhood_search_ls(const tsp_t &tsp, unsigned int path_size) {
+    return solve_large_neighborhood_search(tsp, path_size, true);
+}
+
+std::vector<solution_t>
+solve_large_neighborhood_search_nols(const tsp_t &tsp, unsigned int path_size) {
+    return solve_large_neighborhood_search(tsp, path_size, false);
 }
