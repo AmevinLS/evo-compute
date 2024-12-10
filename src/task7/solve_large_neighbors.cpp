@@ -11,9 +11,10 @@ solution_t destroy_solution(solution_t sol) {
     int num_nodes_to_remove = sol.path.size() * 0.25;
     std::vector<int> weights = std::vector(sol.path.size(), 1);
 
-    for (int i = 0; i < sol.path.size(); i++) {
-        weights[i] = sol.tsp->weights[sol.path[i]];
-    }
+    // for (int i = 0; i < sol.path.size(); i++) {
+    //     weights[i] = -sol.remove_delta(i);
+    //     // weights[i] = sol.tsp->weights[sol.path[i]];
+    // }
 
     for (int i = 0; i < num_nodes_to_remove; i++) {
         int idx_to_remove = random_num(weights);

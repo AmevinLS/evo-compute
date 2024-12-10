@@ -14,7 +14,7 @@ int main() {
     tsp_t tsp = parse(fin);
     timer_t timer;
 
-    const unsigned NUM_RUNS = 10;
+    const unsigned NUM_RUNS = 20;
     const unsigned PATH_SIZE = 100;
 
     std::vector<solution_t> solutions_msls;
