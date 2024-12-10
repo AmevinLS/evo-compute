@@ -10,6 +10,7 @@
 #include "task5/solve_local_deltas.cpp"
 #include "task6/solve_local_iterated.cpp"
 #include "task6/solve_local_multiple.cpp"
+#include "task7/solve_large_neighbors.cpp"
 
 #include <chrono>
 #include <map>
@@ -33,7 +34,9 @@ enum heuristic_t {
     LOCAL_CANDIDATES_RANDOM_STEEPEST,
     LOCAL_DELTAS_RANDOM_STEEPEST,
     LOCAL_SEARCH_MULTIPLE_START,
-    LOCAL_SEARCH_ITERATED
+    LOCAL_SEARCH_ITERATED,
+    LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
+    LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
 };
 
 std::map<heuristic_t, std::string> heuristic_t_str = {
@@ -55,7 +58,11 @@ std::map<heuristic_t, std::string> heuristic_t_str = {
     {LOCAL_CANDIDATES_RANDOM_STEEPEST, "local_candidates_random_steepest"},
     {LOCAL_DELTAS_RANDOM_STEEPEST, "local_deltas_random_steepest"},
     {LOCAL_SEARCH_MULTIPLE_START, "local_search_multiple_start"},
-    {LOCAL_SEARCH_ITERATED, "local_search_iterated"}};
+    {LOCAL_SEARCH_ITERATED, "local_search_iterated"},
+    {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
+     "local_search_large_neighbourhood_ls"},
+    {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
+     "local_search_large_neighbourhood_no_ls"}};
 
 std::map<heuristic_t, solution_t (*)(const tsp_t &, unsigned int, unsigned int)>
     gen_heuristics_to_fn = {
@@ -86,7 +93,11 @@ std::map<heuristic_t, std::vector<solution_t> (*)(const tsp_t &, unsigned int)>
          solve_local_candidates_steepest_random},
         {LOCAL_DELTAS_RANDOM_STEEPEST, solve_local_deltas_steepest_random},
         {LOCAL_SEARCH_MULTIPLE_START, solve_local_search_multiple_start},
-        {LOCAL_SEARCH_ITERATED, solve_local_search_iterated}};
+        {LOCAL_SEARCH_ITERATED, solve_local_search_iterated},
+        {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
+         solve_large_neighborhood_search_ls},
+        {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
+         solve_large_neighborhood_search_nols}};
 
 std::vector<solution_t> solve(const tsp_t &tsp, heuristic_t heuristic) {
     std::vector<solution_t> solutions;

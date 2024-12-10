@@ -114,17 +114,19 @@ struct solution_t {
         remaining_nodes.erase(node);
     }
 
+    // Delete node at pos ({0, 1, 2} -> 1 -> {0, 2})
+    void remove(int pos) {
+        cost += remove_delta(pos);
+        remaining_nodes.insert(path[pos]);
+        path.erase(path.begin() + pos);
+    }
+
     // Replace node at pos with node ({0, 1, 2} -> 1 -> {0, node, 2})
     void replace(unsigned int node, int pos) {
         cost += replace_delta(node, pos);
-        unsigned int old_node = path[pos];
-        path[pos] = node;
         remaining_nodes.erase(node);
-        remaining_nodes.insert(old_node);
-        // if (!is_valid())
-        //     throw std::logic_error("Is invalid");
-        // if (!is_cost_correct())
-        //     throw std::logic_error("Cost isn't correct");
+        remaining_nodes.insert(path[pos]);
+        path[pos] = node;
     }
 
     // Swap nodes at pos1 and pos2 ({0, 1, 2} -> 1, 2 -> {0, 2, 1})
@@ -143,10 +145,6 @@ struct solution_t {
 
         cost += reverse_delta(pos1, pos2);
         std::reverse(path.begin() + pos1, path.begin() + pos2 + 1);
-        // if (!is_valid())
-        //     throw std::logic_error("Is invalid");
-        // if (!is_cost_correct())
-        //     throw std::logic_error("Cost isn't correct");
     }
 
 #pragma endregion Operators
@@ -168,6 +166,14 @@ struct solution_t {
         unsigned int b = path[next(pos)];
         return tsp->weights[node] + tsp->adj_matrix(a, node) +
                tsp->adj_matrix(node, b) - tsp->adj_matrix(a, b);
+    }
+
+    int remove_delta(int pos) {
+        unsigned a = path[prev(pos)];
+        unsigned b = path[pos];
+        unsigned c = path[next(pos)];
+        return tsp->adj_matrix(a, c) - tsp->adj_matrix(a, b) -
+               tsp->adj_matrix(b, c) - tsp->weights[b];
     }
 
     // Cost delta of replacing node at pos (see: replace)

@@ -10,11 +10,7 @@
 #define REGRET_K 2
 #define REGRET_WEIGHT 0.5
 
-solution_t solve_regret(const tsp_t &tsp, unsigned int n, unsigned int start,
-                        float weight) {
-
-    solution_t solution(tsp, find_cycle(tsp, start));
-
+solution_t solve_regret(solution_t solution, unsigned int n, float weight) {
     std::vector<pos_delta_t> deltas;
     deltas.reserve(n);
 
@@ -58,10 +54,12 @@ solution_t solve_regret(const tsp_t &tsp, unsigned int n, unsigned int start,
 
 solution_t solve_regret_weighted(const tsp_t &tsp, unsigned int n,
                                  unsigned int start) {
-    return solve_regret(tsp, n, start, REGRET_WEIGHT);
+    solution_t solution(tsp, find_cycle(tsp, start));
+    return solve_regret(solution, n, REGRET_WEIGHT);
 }
 
 solution_t solve_regret_unweighted(const tsp_t &tsp, unsigned int n,
                                    unsigned int start) {
-    return solve_regret(tsp, n, start, 1.0);
+    solution_t solution(tsp, find_cycle(tsp, start));
+    return solve_regret(solution, n, 1.0);
 }
