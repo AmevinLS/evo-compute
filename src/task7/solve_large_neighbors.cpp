@@ -11,10 +11,6 @@ solution_t destroy_solution(solution_t sol) {
     int num_nodes_to_remove = sol.path.size() * 0.25;
     std::vector<int> weights = std::vector(sol.path.size(), 1);
 
-    for (int i = 0; i < sol.path.size(); i++) {
-        weights[i] = sol.tsp->weights[sol.path[i]];
-    }
-
     for (int i = 0; i < num_nodes_to_remove; i++) {
         int idx_to_remove = random_num(weights);
         weights.erase(weights.begin() + idx_to_remove);
@@ -74,7 +70,6 @@ std::vector<solution_t> solve_large_neighborhood_search(const tsp_t &tsp,
         solutions.push_back(large_neighborhood_search(
             tsp, path_size, time_limit_ms, ls_after_repair));
         solutions.back().runtime_ms = timer.measure();
-        solutions.back().search_iters = tsp.n;
     }
     return solutions;
 }
