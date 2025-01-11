@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <chrono>
+#include <climits>
+#include <functional>
+#include <random>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -11,6 +14,30 @@ struct node_t {
     int x;
     int y;
     int weight;
+};
+
+struct edge_t {
+    unsigned int from;
+    unsigned int to;
+};
+
+inline bool operator==(const edge_t &lhs, const edge_t &rhs) {
+    return lhs.from == rhs.from && lhs.to == rhs.to;
+}
+
+template <> struct std::hash<edge_t> {
+    inline std::size_t operator()(const edge_t &edge) const {
+        unsigned a, b;
+        if (edge.from < edge.to) {
+            a = edge.from;
+            b = edge.to;
+        } else {
+            a = edge.to;
+            b = edge.from;
+        }
+        return std::hash<std::string>()(std::to_string(a) + "," +
+                                        std::to_string(b));
+    }
 };
 
 typedef std::vector<int> adj_list_t; // list of weights
@@ -258,6 +285,16 @@ struct solution_t {
     bool is_valid() const {
         return std::unordered_set(path.begin(), path.end()).size() ==
                path.size();
+    }
+
+    std::unordered_set<edge_t> to_edges() const {
+        std::unordered_set<edge_t> edges;
+        edges.reserve(path.size());
+        for (unsigned int i = 0; i < path.size() - 1; i++) {
+            edges.emplace(edge_t{path[i], path[i + 1]});
+        }
+        edges.emplace(edge_t{path.back(), path.front()});
+        return edges;
     }
 
 #pragma endregion Helpers

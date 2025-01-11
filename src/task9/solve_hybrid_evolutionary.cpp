@@ -4,7 +4,6 @@
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include "../task3/solve_local_search.cpp"
-#include "recombination_opers.cpp"
 #include <iterator>
 #include <set>
 #include <utility>
@@ -70,11 +69,10 @@ class PopulationCostsTracker {
     std::multiset<CostIdxPair, CompareCostIdxPair> pairs_set_;
 };
 
-solution_t SolveHybridEvolutionary(const tsp_t &tsp, unsigned path_size,
-                                   unsigned pop_size,
-                                   const RecombOper &recomb_oper,
-                                   bool ls_after_recomb,
-                                   unsigned time_limit_ms) {
+solution_t SolveHybridEvolutionary(
+    const tsp_t &tsp, unsigned path_size, unsigned pop_size,
+    solution_t (*recomb_oper)(const solution_t &, const solution_t &),
+    bool ls_after_recomb, unsigned time_limit_ms) {
     std::vector<solution_t> population;
     population.reserve(pop_size);
     ParentSelector selector(pop_size);
@@ -94,8 +92,7 @@ solution_t SolveHybridEvolutionary(const tsp_t &tsp, unsigned path_size,
         // Draw at random two different solutions
         auto [par1, par2] = selector.Select();
         // Construct offspring by recombining parents
-        solution_t child =
-            recomb_oper.Recombine(population[par1], population[par2]);
+        solution_t child = recomb_oper(population[par1], population[par2]);
         if (ls_after_recomb)
             child = solve_local_search(child, solution_t::REVERSE, GREEDY);
 

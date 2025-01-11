@@ -5,26 +5,16 @@
 #include <set>
 #include <stack>
 #include <stdexcept>
-#include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 
-struct Edge {
-    unsigned from;
-    unsigned to;
-};
-
-inline bool operator==(const Edge &lhs, const Edge &rhs) {
-    return lhs.from == rhs.from && lhs.to == rhs.to;
-}
-
 struct oper_info_t {
     int delta;
-    Edge rem_edge1;                   // One of removed edges
-    Edge rem_edge2;                   // One of removed edges
+    edge_t rem_edge1;                 // One of removed edges
+    edge_t rem_edge2;                 // One of removed edges
     std::optional<unsigned> new_node; // If .has_value(), then the op is
                                       // REPLACE, otherwise - REVERSE
 };
@@ -42,15 +32,15 @@ inline bool operator!=(const oper_info_t &lhs, const oper_info_t &rhs) {
 
 inline oper_info_t get_reverse_op_info(const solution_t &sol, unsigned idx1,
                                        unsigned idx2, int delta) {
-    return oper_info_t{delta, Edge{sol.path[sol.prev(idx1)], sol.path[idx1]},
-                       Edge{sol.path[idx2], sol.path[sol.next(idx2)]},
+    return oper_info_t{delta, edge_t{sol.path[sol.prev(idx1)], sol.path[idx1]},
+                       edge_t{sol.path[idx2], sol.path[sol.next(idx2)]},
                        std::nullopt};
 }
 
 inline oper_info_t get_replace_op_info(const solution_t &sol, unsigned node,
                                        unsigned pos, int delta) {
-    return oper_info_t{delta, Edge{sol.path[sol.prev(pos)], sol.path[pos]},
-                       Edge{sol.path[pos], sol.path[sol.next(pos)]}, node};
+    return oper_info_t{delta, edge_t{sol.path[sol.prev(pos)], sol.path[pos]},
+                       edge_t{sol.path[pos], sol.path[sol.next(pos)]}, node};
 }
 
 inline std::pair<unsigned, unsigned>
@@ -159,37 +149,22 @@ inline std::optional<unsigned> get_node_idx(const solution_t &sol,
 }
 
 struct edge_tracker_t {
-    struct UndirectedEdgeHash {
-        inline std::size_t operator()(const Edge &edge) const {
-            unsigned a, b;
-            if (edge.from < edge.to) {
-                a = edge.from;
-                b = edge.to;
-            } else {
-                a = edge.to;
-                b = edge.from;
-            }
-            return std::hash<std::string>()(std::to_string(a) + "," +
-                                            std::to_string(b));
-        }
-    };
-
     enum verdict_t { REMOVE, LEAVE, USE };
 
-    std::unordered_set<Edge, UndirectedEdgeHash> edges_in_sol;
+    std::unordered_set<edge_t> edges_in_sol;
 
     inline edge_tracker_t(const solution_t &solution)
         : edges_in_sol(solution_to_edges(solution)) {}
 
-    inline static std::unordered_set<Edge, UndirectedEdgeHash>
+    inline static std::unordered_set<edge_t>
     solution_to_edges(const solution_t &solution) {
-        std::unordered_set<Edge, UndirectedEdgeHash> edge_set;
+        std::unordered_set<edge_t> edge_set;
         edge_set.reserve(solution.path.size());
         for (unsigned i = 1; i < solution.path.size(); i++) {
             edge_set.emplace(
-                Edge{solution.path[solution.prev(i)], solution.path[i]});
+                edge_t{solution.path[solution.prev(i)], solution.path[i]});
         }
-        edge_set.emplace(Edge{solution.path.back(), solution.path.front()});
+        edge_set.emplace(edge_t{solution.path.back(), solution.path.front()});
         return edge_set;
     }
 
@@ -216,8 +191,8 @@ struct edge_tracker_t {
         //     size");
     }
 
-    inline static bool edges_same_direction(const Edge &edge1,
-                                            const Edge &edge2) {
+    inline static bool edges_same_direction(const edge_t &edge1,
+                                            const edge_t &edge2) {
         if (edge1.from == edge2.from && edge1.to == edge2.to)
             return true;
         else if (edge1.from == edge2.to && edge1.to == edge2.from)
