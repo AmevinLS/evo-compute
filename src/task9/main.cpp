@@ -45,12 +45,14 @@ int main() {
                     tsp, PATH_SIZE, 20, *recomb_oper, true, avg_msls_duration);
                 evo_sol.runtime_ms = timer.measure();
                 solutions_lns.push_back(evo_sol);
-                std::cout << "LNS with ls_after_repair=" << ls_after_repair
-                          << " " << i << ": " << evo_sol.cost << "\n";
+                std::cout << "HAE(" << recomb_oper->GetName()
+                          << ", ls_after_repair=" << ls_after_repair << ") "
+                          << i << ": " << evo_sol.cost << "\n";
             }
             std::cout << std::endl;
-            std::cout << "LNS with ls_after_repair=" << ls_after_repair << ":"
-                      << std::endl
+            std::cout << "HAE(" << recomb_oper->GetName()
+                      << ", ls_after_repair=" << ls_after_repair << ") "
+                      << ": " << std::endl
                       << solutions_lns << std::endl;
         }
     }

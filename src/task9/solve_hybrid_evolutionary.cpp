@@ -14,8 +14,7 @@
 // in the main func
 class ParentSelector {
   public:
-    ParentSelector(unsigned pop_size)
-        : pop_size_(pop_size), pop_weights_(pop_size, 1) {}
+    ParentSelector(unsigned pop_size) : pop_weights_(pop_size, 1) {}
 
     std::pair<unsigned, unsigned> Select() {
         unsigned par1 = random_num(pop_weights_);
@@ -26,7 +25,6 @@ class ParentSelector {
     }
 
   private:
-    const unsigned pop_size_;
     std::vector<int> pop_weights_;
 };
 
@@ -91,6 +89,7 @@ solution_t SolveHybridEvolutionary(const tsp_t &tsp, unsigned path_size,
 
     timer_t timer;
     timer.start();
+    unsigned search_iters = 0;
     while (timer.measure() < time_limit_ms) {
         // Draw at random two different solutions
         auto [par1, par2] = selector.Select();
@@ -107,7 +106,10 @@ solution_t SolveHybridEvolutionary(const tsp_t &tsp, unsigned path_size,
             population[worst_idx] = child;
             cost_tracker.ReplaceWorst(child.cost, worst_idx);
         }
+        search_iters++;
     }
 
-    return population[cost_tracker.GetBest().idx];
+    solution_t res_sol = population[cost_tracker.GetBest().idx];
+    res_sol.search_iters = search_iters;
+    return res_sol;
 }
