@@ -6,6 +6,9 @@
 #include "../common/types.cpp"
 #include "../task2/solve_greedy_regret.cpp"
 
+auto rd = std::random_device();
+auto rng = std::default_random_engine(rd());
+
 std::vector<unsigned int> combine(const solution_t &left,
                                   const solution_t &right, bool fill) {
     auto edge_set = left.to_edges();
@@ -37,8 +40,6 @@ std::vector<unsigned int> combine(const solution_t &left,
     }
 
     if (fill) {
-        auto rd = std::random_device();
-        auto rng = std::default_random_engine(rd());
         std::vector<unsigned int> rnv =
             std::vector<unsigned int>(rn.begin(), rn.end());
 
