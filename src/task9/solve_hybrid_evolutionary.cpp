@@ -47,7 +47,7 @@ solution_t solve_hybrid_evolutionary(
 
     for (unsigned i = 0; i < pop_size; i++) {
         solution_t sol = gen_random_solution(tsp, path_size);
-        sol = solve_local_search(sol, solution_t::REVERSE, GREEDY);
+        sol = solve_local_search(sol, solution_t::REVERSE, STEEPEST);
         population.push_back(sol);
         pop_costs.insert(sol.cost);
         cost_tracker.insert({sol.cost, i});
@@ -63,7 +63,7 @@ solution_t solve_hybrid_evolutionary(
         // Construct offspring by recombining parents
         solution_t child = recomb_oper(population[par1], population[par2]);
         if (ls_after_recomb) {
-            child = solve_local_search(child, solution_t::REVERSE, GREEDY);
+            child = solve_local_search(child, solution_t::REVERSE, STEEPEST);
         }
 
         // Replace worst solution in population if better
