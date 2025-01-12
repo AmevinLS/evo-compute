@@ -4,6 +4,9 @@
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 #include "../task3/solve_local_search.cpp"
+#include "../task6/solve_local_multiple.cpp"
+#include "recombination_opers.cpp"
+
 #include <functional>
 #include <iterator>
 #include <set>
@@ -30,7 +33,7 @@ template <> struct std::less<individual_t> {
     }
 };
 
-solution_t SolveHybridEvolutionary(
+solution_t solve_hybrid_evolutionary(
     const tsp_t &tsp, unsigned path_size, unsigned pop_size,
     solution_t (*recomb_oper)(const solution_t &, const solution_t &),
     bool ls_after_recomb, unsigned time_limit_ms) {
@@ -81,4 +84,46 @@ solution_t SolveHybridEvolutionary(
     solution_t res_sol = population[(*cost_tracker.rbegin()).idx];
     res_sol.search_iters = search_iters;
     return res_sol;
+}
+
+std::vector<solution_t> solve_hybrid_evolutionary(
+    const tsp_t &tsp, unsigned int path_size,
+    solution_t (*recomb_oper)(const solution_t &, const solution_t &),
+    bool ls_after_recomb) {
+    std::vector<solution_t> mslp_solutions =
+        solve_local_search_multiple_start(tsp, path_size);
+    int time_limit_ms =
+        std::accumulate(mslp_solutions.begin(), mslp_solutions.end(), 0,
+                        [](int val, const solution_t &sol) {
+                            return val + sol.runtime_ms;
+                        }) /
+        mslp_solutions.size();
+
+    std::vector<solution_t> solutions;
+    solutions.reserve(20);
+    timer_t timer;
+    for (unsigned i = 0; i < 20; i++) {
+        timer.start();
+        solutions.push_back(solve_hybrid_evolutionary(
+            tsp, path_size, 20, recomb_oper, ls_after_recomb, time_limit_ms));
+        solutions.back().runtime_ms = timer.measure();
+    }
+    return solutions;
+}
+
+std::vector<solution_t> solve_hybrid_evolutionary_fill(const tsp_t &tsp,
+                                                       unsigned int path_size) {
+    return solve_hybrid_evolutionary(tsp, path_size, random_fill_op, false);
+}
+
+std::vector<solution_t>
+solve_hybrid_evolutionary_repair_no_ls(const tsp_t &tsp,
+                                       unsigned int path_size) {
+    return solve_hybrid_evolutionary(tsp, path_size, heuristic_repair_op,
+                                     false);
+}
+
+std::vector<solution_t>
+solve_hybrid_evolutionary_repair_ls(const tsp_t &tsp, unsigned int path_size) {
+    return solve_hybrid_evolutionary(tsp, path_size, heuristic_repair_op, true);
 }

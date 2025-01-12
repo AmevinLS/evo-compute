@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
-
 #include "../common/random.cpp"
 #include "../common/types.cpp"
 #include "../task2/solve_greedy_regret.cpp"
+
+#include <vector>
 
 auto rd = std::random_device();
 auto rng = std::default_random_engine(rd());
@@ -13,15 +13,11 @@ std::vector<unsigned int> combine(const solution_t &left,
                                   const solution_t &right, bool fill) {
     auto edge_set = left.to_edges();
     std::vector<unsigned int> new_path;
-    std::unordered_set<unsigned int> rn;
+    std::vector<bool> rn = std::vector<bool>(left.tsp->n, true);
     bool prev = false;
     bool curr = false;
 
-    if (fill) {
-        for (unsigned int i = 0; i < left.tsp->n; i++) {
-            rn.insert(i);
-        }
-    }
+    new_path.reserve(left.path.size());
 
     for (int i = 0; i < right.path.size(); i++) {
         curr = edge_set.count(
@@ -29,9 +25,7 @@ std::vector<unsigned int> combine(const solution_t &left,
 
         if (prev || curr) {
             new_path.push_back(right.path[i]);
-            if (fill) {
-                rn.erase(right.path[i]);
-            }
+            rn[right.path[i]] = false;
         } else if (fill) {
             new_path.push_back(UINT_MAX);
         }
@@ -40,17 +34,19 @@ std::vector<unsigned int> combine(const solution_t &left,
     }
 
     if (fill) {
-        std::vector<unsigned int> rnv =
-            std::vector<unsigned int>(rn.begin(), rn.end());
-
-        std::shuffle(rnv.begin(), rnv.end(), rng);
-        int idx = 0;
+        int idx = random_num(0, rn.size());
 
         for (int i = 0; i < new_path.size(); i++) {
             if (new_path[i] != UINT_MAX) {
                 continue;
             }
-            new_path[i] = rnv[idx++];
+
+            while (!rn[idx]) {
+                idx = idx == rn.size() - 1 ? 0 : idx + 1;
+            }
+
+            new_path[i] = idx;
+            rn[idx] = false;
         }
     }
 

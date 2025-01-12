@@ -42,8 +42,8 @@ int main() {
             std::vector<solution_t> solutions_lns;
             for (unsigned i = 0; i < NUM_RUNS; i++) {
                 timer.start();
-                solution_t evo_sol = SolveHybridEvolutionary(
-                    tsp, PATH_SIZE, 20, recomb_oper.first, true,
+                solution_t evo_sol = solve_hybrid_evolutionary(
+                    tsp, PATH_SIZE, 20, recomb_oper.first, ls_after_repair,
                     avg_msls_duration);
                 evo_sol.runtime_ms = timer.measure();
                 solutions_lns.push_back(evo_sol);
