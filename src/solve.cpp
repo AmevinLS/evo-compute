@@ -69,8 +69,7 @@ std::map<heuristic_t, std::string> heuristic_t_str = {
      "local_search_large_neighbourhood_no_ls"},
     {HYBRID_EVOLUTIONARY_FILL, "hybrid_evolutionary_fill"},
     {HYBRID_EVOLUTIONARY_REPAIR_NO_LS, "hybrid_evolutionary_repair_no_ls"},
-    {HYBRID_EVOLUTIONARY_REPAIR_LS,
-     "local_search_hybrid_evolutionary_repair_ls"}};
+    {HYBRID_EVOLUTIONARY_REPAIR_LS, "hybrid_evolutionary_repair_ls"}};
 
 std::map<heuristic_t, solution_t (*)(const tsp_t &, unsigned int, unsigned int)>
     gen_heuristics_to_fn = {
