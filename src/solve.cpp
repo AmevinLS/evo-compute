@@ -11,6 +11,7 @@
 #include "task6/solve_local_iterated.cpp"
 #include "task6/solve_local_multiple.cpp"
 #include "task7/solve_large_neighbors.cpp"
+#include "task9/solve_hybrid_evolutionary.cpp"
 
 #include <chrono>
 #include <map>
@@ -37,6 +38,9 @@ enum heuristic_t {
     LOCAL_SEARCH_ITERATED,
     LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
     LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
+    HYBRID_EVOLUTIONARY_FILL,
+    HYBRID_EVOLUTIONARY_REPAIR_NO_LS,
+    HYBRID_EVOLUTIONARY_REPAIR_LS
 };
 
 std::map<heuristic_t, std::string> heuristic_t_str = {
@@ -62,7 +66,10 @@ std::map<heuristic_t, std::string> heuristic_t_str = {
     {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
      "local_search_large_neighbourhood_ls"},
     {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
-     "local_search_large_neighbourhood_no_ls"}};
+     "local_search_large_neighbourhood_no_ls"},
+    {HYBRID_EVOLUTIONARY_FILL, "hybrid_evolutionary_fill"},
+    {HYBRID_EVOLUTIONARY_REPAIR_NO_LS, "hybrid_evolutionary_repair_no_ls"},
+    {HYBRID_EVOLUTIONARY_REPAIR_LS, "hybrid_evolutionary_repair_ls"}};
 
 std::map<heuristic_t, solution_t (*)(const tsp_t &, unsigned int, unsigned int)>
     gen_heuristics_to_fn = {
@@ -97,7 +104,11 @@ std::map<heuristic_t, std::vector<solution_t> (*)(const tsp_t &, unsigned int)>
         {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
          solve_large_neighborhood_search_ls},
         {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
-         solve_large_neighborhood_search_nols}};
+         solve_large_neighborhood_search_nols},
+        {HYBRID_EVOLUTIONARY_FILL, solve_hybrid_evolutionary_fill},
+        {HYBRID_EVOLUTIONARY_REPAIR_NO_LS,
+         solve_hybrid_evolutionary_repair_no_ls},
+        {HYBRID_EVOLUTIONARY_REPAIR_LS, solve_hybrid_evolutionary_repair_ls}};
 
 std::vector<solution_t> solve(const tsp_t &tsp, heuristic_t heuristic) {
     std::vector<solution_t> solutions;
@@ -109,14 +120,12 @@ std::vector<solution_t> solve(const tsp_t &tsp, heuristic_t heuristic) {
     }
 
     const auto fn = gen_heuristics_to_fn[heuristic];
+    timer_t timer;
 
     for (unsigned int i = 0; i < tsp.n; i++) {
-        const auto start = std::chrono::high_resolution_clock::now();
+        timer.start();
         solution_t solution = fn(tsp, n, i);
-        solution.runtime_ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - start)
-                .count();
+        solution.runtime_ms = timer.measure();
         solutions.push_back(solution);
     }
 

@@ -5,21 +5,11 @@
 #include <set>
 #include <stack>
 #include <stdexcept>
-#include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
-
-struct edge_t {
-    unsigned from;
-    unsigned to;
-};
-
-inline bool operator==(const edge_t &lhs, const edge_t &rhs) {
-    return lhs.from == rhs.from && lhs.to == rhs.to;
-}
 
 struct oper_info_t {
     int delta;
@@ -159,31 +149,16 @@ inline std::optional<unsigned> get_node_idx(const solution_t &sol,
 }
 
 struct edge_tracker_t {
-    struct UndirectedEdgeHash {
-        inline std::size_t operator()(const edge_t &edge) const {
-            unsigned a, b;
-            if (edge.from < edge.to) {
-                a = edge.from;
-                b = edge.to;
-            } else {
-                a = edge.to;
-                b = edge.from;
-            }
-            return std::hash<std::string>()(std::to_string(a) + "," +
-                                            std::to_string(b));
-        }
-    };
-
     enum verdict_t { REMOVE, LEAVE, USE };
 
-    std::unordered_set<edge_t, UndirectedEdgeHash> edges_in_sol;
+    std::unordered_set<edge_t> edges_in_sol;
 
     inline edge_tracker_t(const solution_t &solution)
         : edges_in_sol(solution_to_edges(solution)) {}
 
-    inline static std::unordered_set<edge_t, UndirectedEdgeHash>
+    inline static std::unordered_set<edge_t>
     solution_to_edges(const solution_t &solution) {
-        std::unordered_set<edge_t, UndirectedEdgeHash> edge_set;
+        std::unordered_set<edge_t> edge_set;
         edge_set.reserve(solution.path.size());
         for (unsigned i = 1; i < solution.path.size(); i++) {
             edge_set.emplace(

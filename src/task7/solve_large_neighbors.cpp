@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../common/random.cpp"
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
