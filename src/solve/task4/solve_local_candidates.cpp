@@ -1,55 +1,17 @@
 #include "../common/types.cpp"
 #include "../task1/solve_random.cpp"
 
-#include <algorithm>
-#include <chrono>
-#include <numeric>
 #include <optional>
 #include <stdexcept>
-#include <unordered_map>
 #include <vector>
 
-typedef std::unordered_map<unsigned int, std::vector<unsigned int>> neighbors_t;
-
-neighbors_t get_nearest_neighbors(const tsp_t &tsp, unsigned k) {
-    neighbors_t nn = {};
-
-    for (unsigned int i = 0; i < tsp.n; i++) {
-        nn[i] = std::vector<unsigned int>(tsp.n);
-        std::iota(nn[i].begin(), nn[i].end(), 0);
-        adj_list_t neighbors = tsp.adj_matrix[i];
-
-        std::transform(neighbors.cbegin(), neighbors.cend(),
-                       tsp.weights.cbegin(), neighbors.begin(),
-                       [](int dist, int weight) { return dist + weight; });
-        std::stable_sort(
-            nn[i].begin(), nn[i].end(),
-            [&neighbors](int a, int b) { return neighbors[a] < neighbors[b]; });
-
-        for (std::vector<unsigned int>::iterator it = nn[i].begin();
-             it != nn[i].end();) {
-            if (*it == i) {
-                it = nn[i].erase(it);
-            } else {
-                ++it;
-            }
-        }
-
-        nn[i].erase(nn[i].begin() + k, nn[i].end());
-    }
-
-    return nn;
-}
-
-std::optional<operation_t>
-steepest_candidate_search(const solution_t &sol,
-                          const neighbors_t &neighbors_map) {
+std::optional<operation_t> steepest_candidate_search(const solution_t &sol) {
     int delta = 0;
     std::optional<operation_t> best_op;
 
     for (unsigned node_idx = 0; node_idx < sol.path.size(); node_idx++) {
         unsigned node = sol.path[node_idx];
-        for (unsigned neighb : neighbors_map.at(node)) {
+        for (unsigned neighb : sol.tsp->adj_matrix.neighbors(node, 10)) {
             if (sol.remaining_nodes.find(neighb) == sol.remaining_nodes.end()) {
                 // Edge Swap (REVERSE) Case
                 unsigned neighb_idx =
@@ -98,14 +60,14 @@ steepest_candidate_search(const solution_t &sol,
             }
         }
     }
+
     return best_op;
 }
 
-solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
-                                     const neighbors_t &neighbors_map) {
+solution_t local_candidates(solution_t solution) {
     while (true) {
         std::optional<operation_t> best_op =
-            steepest_candidate_search(solution, neighbors_map);
+            steepest_candidate_search(solution);
 
         solution.search_iters++;
 
@@ -126,25 +88,21 @@ solution_t local_candidates_steepest(const tsp_t &tsp, solution_t solution,
         }
         if (!solution.is_valid()) {
             throw std::logic_error("Solution is invalid");
-        } else if (!solution.is_cost_correct()) {
-            throw std::logic_error("Solution cost is incorrect");
         }
     }
 
     return solution;
 }
 
-std::vector<solution_t> solve_local_candidates_steepest_random(const tsp_t &tsp,
-                                                               unsigned n) {
-    neighbors_t neighbors = get_nearest_neighbors(tsp, 10);
+std::vector<solution_t> solve_local_candidates(const tsp_t &tsp,
+                                               unsigned int n) {
     std::vector<solution_t> solutions = solve_random(tsp, n);
+    timer_t timer;
+
     for (int i = 0; i < solutions.size(); i++) {
-        const auto start = std::chrono::high_resolution_clock().now();
-        solutions[i] = local_candidates_steepest(tsp, solutions[i], neighbors);
-        solutions[i].runtime_ms +=
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock().now() - start)
-                .count();
+        timer.start();
+        solutions[i] = local_candidates(solutions[i]);
+        solutions[i].runtime_ms += timer.measure();
     }
     return solutions;
 }
