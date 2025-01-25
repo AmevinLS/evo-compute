@@ -111,9 +111,14 @@ std::vector<solution_t> solve_hybrid_evolutionary(
     return solutions;
 }
 
-std::vector<solution_t> solve_hybrid_evolutionary_fill(const tsp_t &tsp,
-                                                       unsigned int path_size) {
+std::vector<solution_t>
+solve_hybrid_evolutionary_fill_no_ls(const tsp_t &tsp, unsigned int path_size) {
     return solve_hybrid_evolutionary(tsp, path_size, random_fill_op, false);
+}
+
+std::vector<solution_t>
+solve_hybrid_evolutionary_fill_ls(const tsp_t &tsp, unsigned int path_size) {
+    return solve_hybrid_evolutionary(tsp, path_size, random_fill_op, true);
 }
 
 std::vector<solution_t>

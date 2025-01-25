@@ -13,7 +13,6 @@
 #include "task7/solve_large_neighbors.cpp"
 #include "task9/solve_hybrid_evolutionary.cpp"
 
-#include <chrono>
 #include <map>
 #include <vector>
 
@@ -38,7 +37,8 @@ enum heuristic_t {
     LOCAL_SEARCH_ITERATED,
     LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_LS,
     LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
-    HYBRID_EVOLUTIONARY_FILL,
+    HYBRID_EVOLUTIONARY_FILL_NO_LS,
+    HYBRID_EVOLUTIONARY_FILL_LS,
     HYBRID_EVOLUTIONARY_REPAIR_NO_LS,
     HYBRID_EVOLUTIONARY_REPAIR_LS
 };
@@ -67,7 +67,8 @@ std::map<heuristic_t, std::string> heuristic_t_str = {
      "local_search_large_neighbourhood_ls"},
     {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
      "local_search_large_neighbourhood_no_ls"},
-    {HYBRID_EVOLUTIONARY_FILL, "hybrid_evolutionary_fill"},
+    {HYBRID_EVOLUTIONARY_FILL_NO_LS, "hybrid_evolutionary_fill_no_ls"},
+    {HYBRID_EVOLUTIONARY_FILL_LS, "hybrid_evolutionary_fill_ls"},
     {HYBRID_EVOLUTIONARY_REPAIR_NO_LS, "hybrid_evolutionary_repair_no_ls"},
     {HYBRID_EVOLUTIONARY_REPAIR_LS, "hybrid_evolutionary_repair_ls"}};
 
@@ -105,7 +106,8 @@ std::map<heuristic_t, std::vector<solution_t> (*)(const tsp_t &, unsigned int)>
          solve_large_neighborhood_search_ls},
         {LOCAL_SEARCH_LARGE_NEIGHBOURHOOD_NO_LS,
          solve_large_neighborhood_search_nols},
-        {HYBRID_EVOLUTIONARY_FILL, solve_hybrid_evolutionary_fill},
+        {HYBRID_EVOLUTIONARY_FILL_NO_LS, solve_hybrid_evolutionary_fill_no_ls},
+        {HYBRID_EVOLUTIONARY_FILL_LS, solve_hybrid_evolutionary_fill_ls},
         {HYBRID_EVOLUTIONARY_REPAIR_NO_LS,
          solve_hybrid_evolutionary_repair_no_ls},
         {HYBRID_EVOLUTIONARY_REPAIR_LS, solve_hybrid_evolutionary_repair_ls}};
