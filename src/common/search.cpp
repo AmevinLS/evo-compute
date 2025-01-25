@@ -55,8 +55,8 @@ std::vector<unsigned int> find_cycle(const tsp_t &tsp, unsigned int start) {
             }
 
             int cost = tsp.weights[i] + tsp.weights[j] + tsp.weights[start] +
-                       tsp.adj_matrix(start, i) + tsp.adj_matrix(i, j) +
-                       tsp.adj_matrix(j, start);
+                       tsp.adj_matrix[start][i] + tsp.adj_matrix[i][j] +
+                       tsp.adj_matrix[j][start];
 
             if (cost < min_cost || !path.has_value()) {
                 min_cost = cost;

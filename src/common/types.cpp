@@ -38,21 +38,21 @@ template <> struct std::hash<edge_t> {
     }
 };
 
-typedef std::vector<int> adj_list_t; // list of weights
+typedef std::vector<unsigned int> list_t;
+typedef std::vector<list_t> matrix_t;
 
 struct adj_matrix_t {
-    using matrix_t = std::vector<adj_list_t>;
-    matrix_t m;
+    matrix_t m;  // n x n matrix of distances
+    matrix_t nn; // n x k matrix of nearest neighbors, node => [nn1, nn2, ...]
 
-    adj_matrix_t(unsigned int n) : m(n, adj_list_t(n, 0)) {}
+    adj_matrix_t(unsigned int n) : m(n, list_t(n, 0)), nn(n, list_t(n)) {}
 
-    int &operator()(unsigned int i, unsigned int j) { return m.at(i).at(j); }
-    int operator()(unsigned int i, unsigned int j) const {
-        return m.at(i).at(j);
+    list_t &operator[](unsigned int i) { return m.at(i); }
+    list_t operator[](unsigned int i) const { return m.at(i); }
+
+    list_t neighbors(unsigned int i, unsigned int k) const {
+        return list_t(nn.at(i).begin(), nn.at(i).begin() + k);
     }
-
-    adj_list_t &operator[](unsigned int i) { return m.at(i); }
-    adj_list_t operator[](unsigned int i) const { return m.at(i); }
 
     matrix_t::iterator begin() { return m.begin(); }
     matrix_t::iterator end() { return m.end(); }
@@ -92,13 +92,13 @@ struct solution_t {
         }
 
         for (unsigned int i = 0; i < path.size() - 1; i++) {
-            cost += tsp.adj_matrix(path[i], path[i + 1]) + tsp.weights[path[i]];
+            cost += tsp.adj_matrix[path[i]][path[i + 1]] + tsp.weights[path[i]];
             remaining_nodes.erase(path[i]);
         }
 
         remaining_nodes.erase(path.back());
 
-        cost += tsp.adj_matrix(path.back(), path.front()) +
+        cost += tsp.adj_matrix[path.back()][path.front()] +
                 tsp.weights[path.back()];
     }
 
@@ -120,14 +120,14 @@ struct solution_t {
 
     // Append node to the end of the path ({0, 1, 2} -> {0, 1, 2, node})
     void append(unsigned int node) {
-        cost += tsp->adj_matrix(path.back(), node) + tsp->weights[node];
+        cost += tsp->adj_matrix[path.back()][node] + tsp->weights[node];
         path.push_back(node);
         remaining_nodes.erase(node);
     }
 
     // Prepend node to the beginning of the path ({0, 1, 2} -> {node, 0, 1, 2})
     void prepend(unsigned int node) {
-        cost += tsp->adj_matrix(node, path.front()) + tsp->weights[node];
+        cost += tsp->adj_matrix[node][path.front()] + tsp->weights[node];
         path.insert(path.begin(), node);
         remaining_nodes.erase(node);
     }
@@ -177,28 +177,28 @@ struct solution_t {
 #pragma region Cost functions
     // Cost delta of appending node to the path (see: append)
     int append_delta(unsigned int node) const {
-        return tsp->adj_matrix(path.back(), node) + tsp->weights[node];
+        return tsp->adj_matrix[path.back()][node] + tsp->weights[node];
     }
 
     // Cost delta of prepending node to the path (see: prepend)
     int prepend_delta(unsigned int node) const {
-        return tsp->adj_matrix(node, path.front()) + tsp->weights[node];
+        return tsp->adj_matrix[node][path.front()] + tsp->weights[node];
     }
 
     // Cost delta of inserting node at pos (see: insert)
     int insert_delta(unsigned int node, int pos) const {
         unsigned int a = path[pos];
         unsigned int b = path[next(pos)];
-        return tsp->weights[node] + tsp->adj_matrix(a, node) +
-               tsp->adj_matrix(node, b) - tsp->adj_matrix(a, b);
+        return tsp->weights[node] + tsp->adj_matrix[a][node] +
+               tsp->adj_matrix[node][b] - tsp->adj_matrix[a][b];
     }
 
     int remove_delta(int pos) {
         unsigned a = path[prev(pos)];
         unsigned b = path[pos];
         unsigned c = path[next(pos)];
-        return tsp->adj_matrix(a, c) - tsp->adj_matrix(a, b) -
-               tsp->adj_matrix(b, c) - tsp->weights[b];
+        return tsp->adj_matrix[a][c] - tsp->adj_matrix[a][b] -
+               tsp->adj_matrix[b][c] - tsp->weights[b];
     }
 
     // Cost delta of replacing node at pos (see: replace)
@@ -207,9 +207,9 @@ struct solution_t {
         unsigned int a = path[prev(pos)];
         unsigned int b = path[next(pos)];
 
-        return tsp->adj_matrix(a, node) + tsp->adj_matrix(node, b) +
-               tsp->weights[node] - tsp->adj_matrix(a, old_node) -
-               tsp->adj_matrix(old_node, b) - tsp->weights[old_node];
+        return tsp->adj_matrix[a][node] + tsp->adj_matrix[node][b] +
+               tsp->weights[node] - tsp->adj_matrix[a][old_node] -
+               tsp->adj_matrix[old_node][b] - tsp->weights[old_node];
     }
 
     // Cost delta of swapping nodes at pos1 and pos2 (see: swap)
@@ -224,20 +224,20 @@ struct solution_t {
 
         // next to each other
         if (node2 == b1) {
-            return tsp->adj_matrix(a1, node2) + tsp->adj_matrix(node1, b2) -
-                   tsp->adj_matrix(a1, node1) - tsp->adj_matrix(node2, b2);
+            return tsp->adj_matrix[a1][node2] + tsp->adj_matrix[node1][b2] -
+                   tsp->adj_matrix[a1][node1] - tsp->adj_matrix[node2][b2];
         }
 
         // loop
         if (node1 == b2) {
-            return tsp->adj_matrix(a2, node1) + tsp->adj_matrix(node2, b1) -
-                   tsp->adj_matrix(a2, node2) - tsp->adj_matrix(node1, b1);
+            return tsp->adj_matrix[a2][node1] + tsp->adj_matrix[node2][b1] -
+                   tsp->adj_matrix[a2][node2] - tsp->adj_matrix[node1][b1];
         }
 
-        return tsp->adj_matrix(a1, node2) + tsp->adj_matrix(node2, b1) +
-               tsp->adj_matrix(a2, node1) + tsp->adj_matrix(node1, b2) -
-               tsp->adj_matrix(a1, node1) - tsp->adj_matrix(node1, b1) -
-               tsp->adj_matrix(a2, node2) - tsp->adj_matrix(node2, b2);
+        return tsp->adj_matrix[a1][node2] + tsp->adj_matrix[node2][b1] +
+               tsp->adj_matrix[a2][node1] + tsp->adj_matrix[node1][b2] -
+               tsp->adj_matrix[a1][node1] - tsp->adj_matrix[node1][b1] -
+               tsp->adj_matrix[a2][node2] - tsp->adj_matrix[node2][b2];
     }
 
     // Cost delta of reversing the path from pos1 to pos2 (see: reverse)
@@ -251,8 +251,8 @@ struct solution_t {
             return 0;
         }
 
-        return tsp->adj_matrix(a, c) + tsp->adj_matrix(b, d) -
-               tsp->adj_matrix(a, b) - tsp->adj_matrix(c, d);
+        return tsp->adj_matrix[a][c] + tsp->adj_matrix[b][d] -
+               tsp->adj_matrix[a][b] - tsp->adj_matrix[c][d];
     }
 
 #pragma endregion Cost functions
@@ -269,20 +269,20 @@ struct solution_t {
         return (i - 1) % path.size();
     }
 
-    bool is_cost_correct() const {
+    bool is_valid() const {
+        if (std::unordered_set(path.begin(), path.end()).size() !=
+            path.size()) {
+            return false;
+        }
+
         int actual_cost = 0;
         for (unsigned int i = 0; i < path.size() - 1; i++) {
             actual_cost +=
-                tsp->weights[path[i]] + tsp->adj_matrix(path[i], path[i + 1]);
+                tsp->weights[path[i]] + tsp->adj_matrix[path[i]][path[i + 1]];
         }
         actual_cost += tsp->weights[path.back()] +
-                       tsp->adj_matrix(path.back(), path.front());
+                       tsp->adj_matrix[path.back()][path.front()];
         return actual_cost == cost;
-    }
-
-    bool is_valid() const {
-        return std::unordered_set(path.begin(), path.end()).size() ==
-               path.size();
     }
 
     std::unordered_set<edge_t> to_edges() const {

@@ -9,17 +9,16 @@
 #include <sstream>
 #include <vector>
 
-std::ostream &operator<<(std::ostream &os, const adj_list_t list) {
-    for (const int &x : list) {
-        os << x << ", ";
-    }
-    return os;
-}
-
 std::ostream &operator<<(std::ostream &os, const adj_matrix_t matrix) {
     int i = 0;
-    for (const adj_list_t &row : matrix) {
-        os << i++ << ": " << std::endl << "\t" << row << std::endl << std::endl;
+    for (const auto &row : matrix) {
+        os << i++ << ": " << std::endl << "\t";
+
+        for (const int &x : row) {
+            os << x << ", ";
+        }
+
+        os << std::endl;
     }
     return os;
 }

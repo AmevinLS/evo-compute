@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -23,6 +25,22 @@ adj_matrix_t matrixof(const std::vector<node_t> nodes) {
 
             matrix[i][j] = l2(nodes[i], nodes[j]);
         }
+
+        std::iota(matrix.nn[i].begin(), matrix.nn[i].end(), 0);
+        list_t neighbors = matrix[i];
+
+        std::transform(neighbors.cbegin(), neighbors.cend(), nodes.cbegin(),
+                       neighbors.begin(), [](int dist, const node_t &node) {
+                           return dist + node.weight;
+                       });
+
+        neighbors[i] = INT_MAX;
+
+        std::stable_sort(
+            matrix.nn[i].begin(), matrix.nn[i].end(),
+            [&neighbors](int a, int b) { return neighbors[a] < neighbors[b]; });
+
+        matrix.nn[i].pop_back();
     }
 
     return matrix;
