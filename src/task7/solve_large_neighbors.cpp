@@ -22,8 +22,8 @@ solution_t destroy_solution(solution_t sol) {
     return sol;
 }
 
-solution_t large_neighborhood_search(const tsp_t &tsp, unsigned int path_size,
-                                     unsigned int time_limit_ms, bool ls) {
+solution_t CustomLNS(const tsp_t &tsp, unsigned int path_size,
+                     unsigned int time_limit_ms, bool ls) {
     solution_t solution = solve_local_search(
         gen_random_solution(tsp, path_size), solution_t::REVERSE, STEEPEST);
     solution_t best = solution;
@@ -69,8 +69,8 @@ std::vector<solution_t> solve_large_neighborhood_search(const tsp_t &tsp,
     timer_t timer;
     for (unsigned int i = 0; i < 20; i++) {
         timer.start();
-        solutions.push_back(large_neighborhood_search(
-            tsp, path_size, time_limit_ms, ls_after_repair));
+        solutions.push_back(
+            CustomLNS(tsp, path_size, time_limit_ms, ls_after_repair));
         solutions.back().runtime_ms = timer.measure();
     }
     return solutions;

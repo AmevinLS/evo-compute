@@ -39,8 +39,8 @@ int main() {
         std::vector<solution_t> solutions_lns;
         for (unsigned i = 0; i < NUM_RUNS; i++) {
             timer.start();
-            solution_t lns_sol = large_neighborhood_search(
-                tsp, PATH_SIZE, avg_msls_duration, true);
+            solution_t lns_sol =
+                CustomLNS(tsp, PATH_SIZE, avg_msls_duration, true);
             lns_sol.runtime_ms = timer.measure();
             solutions_lns.push_back(lns_sol);
             std::cout << "LNS with ls_after_repair=" << ls_after_repair << " "

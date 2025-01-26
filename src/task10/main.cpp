@@ -1,31 +1,12 @@
 #include "../common/parse.cpp"
 #include "../common/types.cpp"
-#include "../task6/solve_local_multiple.cpp"
 
 #include "algorithms.cpp"
+#include "own_method.cpp"
 #include <iostream>
 #include <limits>
 #include <memory>
-
-unsigned GetMSLSDuration(const tsp_t &tsp, unsigned num_runs,
-                         unsigned path_size) {
-    timer_t timer;
-    std::vector<solution_t> solutions_msls;
-    for (unsigned i = 0; i < num_runs; i++) {
-        timer.start();
-        solution_t sol = local_search_multiple_start(tsp, path_size);
-        sol.runtime_ms = timer.measure();
-        solutions_msls.push_back(sol);
-        std::cout << "MSLS " << i << ": " << sol.cost << "\n";
-    }
-    unsigned avg_msls_duration =
-        std::accumulate(solutions_msls.cbegin(), solutions_msls.cend(), 0,
-                        [](int val, const solution_t &sol) {
-                            return val + sol.runtime_ms;
-                        }) /
-        num_runs;
-    return avg_msls_duration;
-}
+#include <sstream>
 
 struct Stats {
     const double avg_duration_ms;
@@ -68,13 +49,19 @@ class ExperimentRunner {
     void Run(const std::vector<std::shared_ptr<Algorithm>> &algos) {
         auto msls = std::make_shared<MultipleStart>();
         Stats msls_stats = RunAlgoStats(msls, 1000000);
+        std::cout << FormatStats(msls->GetName(), msls_stats);
         unsigned time_limit_ms = msls_stats.avg_duration_ms;
         for (auto algo : algos) {
             Stats stats = RunAlgoStats(algo, time_limit_ms);
-            std::cout << algo->GetName() << ": " << stats.best_cost << " / "
-                      << stats.avg_cost << " / " << stats.worst_cost
-                      << std::endl;
+            std::cout << FormatStats(algo->GetName(), stats);
         }
+    }
+
+    std::string FormatStats(std::string algo_name, const Stats &stats) {
+        std::stringstream ss;
+        ss << algo_name << ": " << stats.best_cost << " / " << stats.avg_cost
+           << " / " << stats.worst_cost << std::endl;
+        return ss.str();
     }
 
     const tsp_t &tsp_;
@@ -86,13 +73,14 @@ int main() {
     std::ifstream fin("../../data/TSPA.csv");
     tsp_t tsp = parse(fin);
 
-    const unsigned NUM_RUNS = 10;
+    const unsigned NUM_RUNS = 20;
     const unsigned PATH_SIZE = 100;
 
     ExperimentRunner runner(tsp, NUM_RUNS, PATH_SIZE);
 
     std::vector<std::shared_ptr<Algorithm>> algos = {
-        std::make_shared<HybridEvoRepairNoLS>(),
+        std::make_shared<HybridEvoRepair>(true),
+        // std::make_shared<HybridEvoRepair>(false),
         std::make_shared<CustomAlgo>(),
     };
 

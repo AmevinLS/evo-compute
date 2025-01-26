@@ -16,3 +16,10 @@ int random_num(const std::vector<int> &weights) {
     std::discrete_distribution<> d(weights.cbegin(), weights.cend());
     return d(gen);
 }
+
+int random_num(const std::vector<double> &weights) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::discrete_distribution<> d(weights.cbegin(), weights.cend());
+    return d(gen);
+}

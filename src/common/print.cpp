@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <ostream>
+#include <sstream>
 #include <vector>
 
 std::ostream &operator<<(std::ostream &os, const adj_list_t list) {
@@ -132,4 +133,14 @@ std::ofstream &operator<<(std::ofstream &os, const operation_t &op) {
     os << "{delta=" << op.delta << ", arg1=" << op.arg1 << ", arg2=" << op.arg2
        << ", type=" << op.type << "}";
     return os;
+}
+
+template <class T> std::string VecToString(const std::vector<T> &v) {
+    std::stringstream ss;
+    ss << "{ ";
+    for (unsigned i = 0; i < v.size(); i++) {
+        ss << v[i] << " ";
+    }
+    ss << "}";
+    return ss.str();
 }
