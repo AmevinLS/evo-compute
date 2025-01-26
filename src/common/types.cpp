@@ -11,7 +11,7 @@
 struct node_t {
     int x;
     int y;
-    int weight;
+    unsigned int weight;
 };
 
 struct edge_t {
@@ -51,7 +51,7 @@ struct adj_matrix_t {
     list_t operator[](unsigned int i) const { return m.at(i); }
 
     list_t neighbors(unsigned int i, unsigned int k) const {
-        return list_t(nn.at(i).begin(), nn.at(i).begin() + k);
+        return {nn.at(i).begin(), nn.at(i).begin() + k};
     }
 
     matrix_t::iterator begin() { return m.begin(); }
@@ -61,14 +61,15 @@ struct adj_matrix_t {
 };
 
 struct tsp_t {
+    unsigned int path_size;
     unsigned int n;
     std::vector<node_t> nodes;
-    std::vector<int> weights;
+    std::vector<unsigned int> weights;
     adj_matrix_t adj_matrix;
 
     tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
-        : n(nodes.size()), nodes(nodes), weights(nodes.size(), 0),
-          adj_matrix(adj_matrix) {
+        : n(nodes.size()), path_size(ceil(nodes.size() / 2.0)), nodes(nodes),
+          weights(nodes.size(), 0), adj_matrix(adj_matrix) {
         for (int i = 0; i < n; i++) {
             weights[i] = nodes[i].weight;
         }
@@ -79,12 +80,12 @@ struct solution_t {
     int cost;
     int runtime_ms;
     int search_iters;
-    std::vector<unsigned int> path;
+    list_t path;
     std::unordered_set<unsigned int> remaining_nodes;
     const tsp_t *tsp;
 
-    solution_t(const tsp_t &tsp, std::vector<unsigned int> path,
-               int runtime_ms = 0, int search_iters = 0)
+    solution_t(const tsp_t &tsp, list_t path, int runtime_ms = 0,
+               int search_iters = 0)
         : cost(0), runtime_ms(runtime_ms), search_iters(search_iters),
           path(path), remaining_nodes(), tsp(&tsp) {
         for (unsigned int i = 0; i < tsp.n; i++) {
@@ -115,8 +116,6 @@ struct solution_t {
     }
 
 #pragma region Operators
-
-    enum op_type_t { APPEND, PREPEND, INSERT, REPLACE, SWAP, REVERSE };
 
     // Append node to the end of the path ({0, 1, 2} -> {0, 1, 2, node})
     void append(unsigned int node) {
@@ -298,14 +297,45 @@ struct solution_t {
 #pragma endregion Helpers
 };
 
-typedef std::pair<unsigned int, int> pos_delta_t;
+struct algo_t {
+    virtual std::string short_name() const = 0;
+    virtual std::string full_name() const = 0;
+    virtual std::vector<solution_t>
+    run(const tsp_t &tsp,
+        std::optional<unsigned int> time_limit_ms = std::nullopt) const = 0;
+};
 
+typedef std::pair<unsigned int, int> pos_delta_t;
 typedef std::pair<unsigned int, int> node_delta_t;
 
+enum op_type_t { APPEND, PREPEND, INSERT, REPLACE, SWAP, REVERSE };
+enum search_t { GREEDY, STEEPEST };
+
 struct operation_t {
-    solution_t::op_type_t type;
+    op_type_t type;
     unsigned int arg1, arg2;
     int delta;
+};
+
+struct similarity_t {
+    int cost;
+    unsigned int avg_common_edges, avg_common_nodes;
+    double best_common_edges, best_common_nodes;
+};
+
+typedef std::function<solution_t(const solution_t &, const solution_t &)>
+    evo_op_t;
+
+struct individual_t {
+    int cost;
+    unsigned int idx;
+};
+
+template <> struct std::less<individual_t> {
+    constexpr bool operator()(const individual_t &a,
+                              const individual_t &b) const {
+        return a.cost > b.cost;
+    }
 };
 
 struct timer_t {
