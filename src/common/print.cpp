@@ -16,7 +16,7 @@ std::ostream &operator<<(std::ostream &os, const adj_matrix_t matrix) {
     for (const auto &row : matrix) {
         os << i++ << ": " << std::endl << "\t";
 
-        for (const int &x : row) {
+        for (const unsigned int &x : row) {
             os << x << ", ";
         }
 

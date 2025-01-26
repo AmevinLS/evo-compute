@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../common/print.cpp"
-#include "algorithms.cpp"
+#include "../common/types.cpp"
+
 #include <cmath>
 #include <iostream>
 

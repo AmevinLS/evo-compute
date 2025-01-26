@@ -32,15 +32,14 @@ std::optional<operation_t> steepest_candidate_search(const solution_t &sol) {
                     sol.reverse_delta(sol.next(smaller_idx), bigger_idx);
                 if (delta1 < delta) {
                     delta = delta1;
-                    best_op =
-                        operation_t{solution_t::REVERSE, sol.next(smaller_idx),
-                                    bigger_idx, delta1};
+                    best_op = operation_t{REVERSE, sol.next(smaller_idx),
+                                          bigger_idx, delta1};
                 }
                 int delta2 =
                     sol.reverse_delta(smaller_idx, sol.prev(bigger_idx));
                 if (delta2 < delta) {
                     delta = delta2;
-                    best_op = operation_t{solution_t::REVERSE, smaller_idx,
+                    best_op = operation_t{REVERSE, smaller_idx,
                                           sol.prev(bigger_idx), delta2};
                 }
             } else {
@@ -48,14 +47,14 @@ std::optional<operation_t> steepest_candidate_search(const solution_t &sol) {
                 int delta1 = sol.replace_delta(neighb, sol.prev(node_idx));
                 if (delta1 < delta) {
                     delta = delta1;
-                    best_op = operation_t{solution_t::REPLACE, neighb,
-                                          sol.prev(node_idx), delta1};
+                    best_op = operation_t{REPLACE, neighb, sol.prev(node_idx),
+                                          delta1};
                 }
                 int delta2 = sol.replace_delta(neighb, sol.next(node_idx));
                 if (delta2 < delta) {
                     delta = delta2;
-                    best_op = operation_t{solution_t::REPLACE, neighb,
-                                          sol.next(node_idx), delta2};
+                    best_op = operation_t{REPLACE, neighb, sol.next(node_idx),
+                                          delta2};
                 }
             }
         }

@@ -68,7 +68,7 @@ struct tsp_t {
     adj_matrix_t adj_matrix;
 
     tsp_t(std::vector<node_t> nodes, adj_matrix_t adj_matrix)
-        : n(nodes.size()), path_size(ceil(nodes.size() / 2.0)), nodes(nodes),
+        : path_size(ceil(nodes.size() / 2.0)), n(nodes.size()), nodes(nodes),
           weights(nodes.size(), 0), adj_matrix(adj_matrix) {
         for (int i = 0; i < n; i++) {
             weights[i] = nodes[i].weight;
@@ -303,6 +303,7 @@ struct algo_t {
     virtual std::vector<solution_t>
     run(const tsp_t &tsp,
         std::optional<unsigned int> time_limit_ms = std::nullopt) const = 0;
+    virtual ~algo_t() = default;
 };
 
 typedef std::pair<unsigned int, int> pos_delta_t;

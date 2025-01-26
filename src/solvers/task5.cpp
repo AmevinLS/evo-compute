@@ -23,6 +23,7 @@ inline bool operator==(const oper_info_t &lhs, const oper_info_t &rhs) {
     return lhs.delta == rhs.delta && lhs.new_node == rhs.new_node &&
            edges_equal;
 }
+
 inline bool operator!=(const oper_info_t &lhs, const oper_info_t &rhs) {
     return !(lhs == rhs);
 }
@@ -115,12 +116,12 @@ struct oper_queue_t {
     void update_with_oper(const solution_t &new_sol,
                           const operation_t &last_oper,
                           std::optional<unsigned> removed_node = std::nullopt) {
-        if (last_oper.type == solution_t::REVERSE) {
+        if (last_oper.type == REVERSE) {
             for (unsigned edge_idx = new_sol.prev(last_oper.arg1);
                  edge_idx != new_sol.next(last_oper.arg2);
                  edge_idx = new_sol.next(edge_idx))
                 update_from_new_edge(new_sol, edge_idx);
-        } else if (last_oper.type == solution_t::REPLACE) {
+        } else if (last_oper.type == REPLACE) {
             assert(removed_node.has_value());
             update_from_new_edge(new_sol, new_sol.prev(last_oper.arg2));
             update_from_new_edge(new_sol, last_oper.arg2);
@@ -243,7 +244,7 @@ operation_t convert_info_to_oper(const solution_t &solution,
             idx1 = solution.next(idx1);
             idx2 = solution.prev(idx2);
         }
-        return operation_t{solution_t::REVERSE, idx1, idx2, oper_info.delta};
+        return operation_t{REVERSE, idx1, idx2, oper_info.delta};
     } else {
         // This is a REPLACE operation
         if (oper_info.rem_edge1.to != oper_info.rem_edge2.from)
@@ -251,7 +252,7 @@ operation_t convert_info_to_oper(const solution_t &solution,
         unsigned pos = std::find(solution.path.cbegin(), solution.path.cend(),
                                  oper_info.rem_edge1.to) -
                        solution.path.cbegin();
-        return operation_t{solution_t::REPLACE, oper_info.new_node.value(), pos,
+        return operation_t{REPLACE, oper_info.new_node.value(), pos,
                            oper_info.delta};
     }
 }
@@ -305,11 +306,11 @@ solution_t local_deltas(solution_t solution) {
         }
 
         switch (best_op->type) {
-        case solution_t::REVERSE:
+        case REVERSE:
             solution.reverse(best_op->arg1, best_op->arg2);
             oper_pq.update_with_oper(solution, best_op.value());
             break;
-        case solution_t::REPLACE: {
+        case REPLACE: {
             unsigned removed_node = solution.path[best_op->arg2];
             solution.replace(best_op->arg1, best_op->arg2);
             oper_pq.update_with_oper(solution, best_op.value(), removed_node);

@@ -3,6 +3,7 @@
 #include "parse.cpp"
 
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -37,6 +38,7 @@ int run_experiment(const std::string &fname,
                    const std::vector<std::shared_ptr<algo_t>> algorithms,
                    unsigned int time_limit_ms) {
     auto tsp = parse(fname);
+
     if (!tsp.has_value()) {
         return 1;
     }
