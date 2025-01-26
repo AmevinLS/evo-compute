@@ -1,55 +1,17 @@
+#include "common/experiment.cpp"
+#include "common/parse.cpp"
+#include "common/print.cpp"
+#include "common/types.cpp"
+#include "solvers/solvers.cpp"
+
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
-
-#include "common/parse.cpp"
-#include "common/print.cpp"
-#include "solve.cpp"
-
-#define ERROR "\033[0;31m[ERROR]\033[0m"
-
-std::optional<std::ifstream> open_file(const std::string &fname) {
-    std::ifstream in(fname);
-    if (!in.is_open()) {
-        std::cerr << ERROR << " failed to open file: " << fname << std::endl;
-        std::cerr
-            << "Check if the file exists and you have permission to read it."
-            << std::endl;
-        return {};
-    }
-    return in;
-}
-
-int experiment(const std::string &fname, const std::string &output_dir) {
-    auto in = open_file(fname);
-
-    if (!in.has_value()) {
-        return 1;
-    }
-
-    tsp_t tsp = parse(in.value());
-    std::string instance_name = fname.substr(fname.find_last_of("/\\") + 1);
-    instance_name = instance_name.substr(0, instance_name.find_last_of("."));
-    instance_name = output_dir + instance_name;
-
-    for (auto &[key, value] : heuristic_t_str) {
-        std::cout << "Running " << value << " heuristic" << std::endl;
-
-        std::vector solutions = solve(tsp, key);
-        std::string path = instance_name + "_" + value + ".csv";
-        std::ofstream out(path);
-
-        out << solutions;
-
-        std::cout << "Results saved to " << path << std::endl;
-    }
-
-    return 0;
-}
+#include <vector>
 
 int parse_main(int argc, char **argv) {
     if (argc < 3) {
@@ -81,17 +43,16 @@ int parse_main(int argc, char **argv) {
         return 1;
     }
 
-    auto in = open_file(fname);
-    if (!in.has_value()) {
+    auto tsp = parse(fname);
+
+    if (!tsp.has_value()) {
         return 1;
     }
 
-    tsp_t tsp = parse(in.value());
-
-    std::cout << tsp.n << " nodes" << std::endl;
+    std::cout << tsp->n << " nodes" << std::endl;
 
     if (verbose) {
-        std::cout << tsp << std::endl;
+        std::cout << tsp.value() << std::endl;
     }
 
     return 0;
@@ -105,47 +66,47 @@ int solve_main(int argc, char **argv) {
     }
 
     if (strcmp(argv[2], "--help") == 0) {
-        std::string heuristics = "";
+        std::string algos = "";
         int i = 0;
-        for (auto &[key, value] : heuristic_t_str) {
-            heuristics += "\"" + value + "\"";
-            if (++i < heuristic_t_str.size()) {
-                heuristics += ", ";
+        for (auto algo : DEFAULT_ALGOS) {
+            algos += "\"" + algo->short_name() + "\"";
+            if (++i < DEFAULT_ALGOS.size()) {
+                algos += ", ";
             }
         }
 
         std::cout << "usage: " << argv[0] << " solve <file> [options]"
                   << std::endl;
         std::cout << "options:" << std::endl;
-        std::cout << "\t--heuristic string\tHeuristic to use (" + heuristics +
+        std::cout << "\t--algo string\tAlgorithms to use (" + algos +
                          ") (default \"random\")"
                   << std::endl;
         return 0;
     }
 
     std::string fname = argv[2];
-    heuristic_t heuristic = RANDOM;
+    std::shared_ptr<algo_t> chosen_algo = std::make_shared<random_algo>();
 
     int i = 2;
     while (++i < argc) {
-        if (strcmp(argv[i], "--heuristic") == 0) {
+        if (strcmp(argv[i], "--algo") == 0) {
             if (i + 1 >= argc) {
-                std::cerr << ERROR << " missing argument for --heuristic"
+                std::cerr << ERROR << " missing argument for --algo"
                           << std::endl;
                 return 1;
             }
 
-            bool heuristic_flag = false;
-            for (auto &[key, value] : heuristic_t_str) {
-                if (argv[i + 1] == value) {
-                    heuristic = key;
-                    heuristic_flag = true;
+            bool algo_flag = false;
+            for (auto algo : DEFAULT_ALGOS) {
+                if (argv[i + 1] == algo->short_name()) {
+                    chosen_algo = algo;
+                    algo_flag = true;
                     break;
                 }
             }
 
-            if (!heuristic_flag) {
-                std::cerr << ERROR << " unknown heuristic: " << argv[i + 1]
+            if (!algo_flag) {
+                std::cerr << ERROR << " unknown algo: " << argv[i + 1]
                           << std::endl;
                 return 1;
             }
@@ -154,17 +115,16 @@ int solve_main(int argc, char **argv) {
             continue;
         }
 
-        std::cerr << ERROR << " unknown option: " << argv[i] << std::endl;
+        std::cerr << ERROR << " unknown algo: " << argv[i] << std::endl;
         return 1;
     }
 
-    auto in = open_file(fname);
-    if (!in.has_value()) {
+    auto tsp = parse(fname);
+    if (!tsp.has_value()) {
         return 1;
     }
 
-    tsp_t tsp = parse(in.value());
-    std::vector solutions = solve(tsp, heuristic);
+    std::vector<solution_t> solutions = chosen_algo->run(tsp.value());
     std::cout << solutions;
 
     return 0;
@@ -181,13 +141,14 @@ int experiment_main(int argc, char **argv) {
         std::cout << "usage: " << argv[0] << " experiment <file>" << std::endl;
         std::cout << "options:" << std::endl;
         std::cout
-            << "\t-o, --output string\tOutput directory (default ./results/)"
+            << "\t-o, --output string\tOutput directory (if not specified, "
+               "prints results to STDOUT)"
             << std::endl;
         return 0;
     }
 
     std::string fname = argv[2];
-    std::string output_dir = "./results/";
+    std::optional<std::string> output_dir = std::nullopt;
 
     int i = 2;
     while (++i < argc) {
@@ -211,22 +172,38 @@ int experiment_main(int argc, char **argv) {
         return 1;
     }
 
-    if (std::filesystem::is_directory(fname)) {
-        for (const auto &entry : std::filesystem::directory_iterator(fname)) {
-            if (!entry.is_regular_file()) {
-                continue;
-            }
+    std::vector<std::string> fnames = {};
 
-            int result = experiment(entry.path().string(), output_dir);
-            if (result != 0) {
-                return result;
+    if (std::filesystem::is_regular_file(fname)) {
+        fnames.push_back(fname);
+    } else {
+        for (const auto &entry : std::filesystem::directory_iterator(fname)) {
+            if (entry.is_regular_file()) {
+                fnames.push_back(entry.path().string());
             }
         }
-
-        return 0;
     }
 
-    return experiment(fname, output_dir);
+    for (const std::string &fname : fnames) {
+        auto tsp = parse(fname);
+
+        if (!tsp.has_value()) {
+            std::cerr << ERROR << " failed to parse " << fname << std::endl;
+            return 1;
+        }
+
+        unsigned int time_limit_ms = calc_time_limit_ms(tsp.value());
+        int result = output_dir.has_value()
+                         ? run_experiment(fname, output_dir.value(),
+                                          DEFAULT_ALGOS, time_limit_ms)
+                         : run_experiment(fname, DEFAULT_ALGOS, time_limit_ms);
+
+        if (result != 0) {
+            return result;
+        }
+    }
+
+    return 0;
 }
 
 int main(int argc, char **argv) {

@@ -1,29 +1,27 @@
-#include "common/parse.cpp"
-#include "common/print.cpp"
+#include "common/experiment.cpp"
 #include "common/types.cpp"
-#include "solve.cpp"
-#include <fstream>
+#include "solvers/solvers.cpp"
+#include "solvers/task6.cpp"
+
+#include <memory>
 
 int main() {
-    std::string fname = "../data/TSPA.csv";
-    std::ifstream fin(fname);
+    std::string instance_name = "TSPA";
+    std::string fname = "data/" + instance_name + ".csv";
 
-    if (!fin.is_open()) {
+    auto tsp = parse(fname);
+
+    if (!tsp.has_value()) {
         return 1;
     }
 
-    tsp_t tsp = parse(fin);
-    std::string instance_name = fname.substr(fname.find_last_of("/\\") + 1);
-    instance_name = instance_name.substr(0, instance_name.find_last_of("."));
+    unsigned int time_limit_ms = calc_time_limit_ms(tsp.value());
+    std::vector<std::shared_ptr<algo_t>> algos = {
+        std::make_shared<random_algo>(),
+        std::make_shared<greedy_cycle_regret_weighted_algo>(),
+        std::make_shared<large_neighborhood_search_ls_algo>(),
+        std::make_shared<hybrid_evo_repair_ls_algo>(),
+    };
 
-    for (auto &heur : {RANDOM}) {
-        std::string heur_str = heuristic_t_str[heur];
-        std::vector solutions = solve(tsp, heur);
-        std::ofstream out("../results/" + instance_name + "_" + heur_str +
-                          ".csv");
-
-        out << solutions;
-    }
-
-    return 0;
+    return run_experiment(fname, algos, time_limit_ms);
 }
