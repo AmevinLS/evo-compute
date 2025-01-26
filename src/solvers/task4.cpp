@@ -1,9 +1,9 @@
+#pragma once
+
 #include "../common/types.cpp"
-#include "../task1/solve_random.cpp"
 
 #include <optional>
 #include <stdexcept>
-#include <vector>
 
 std::optional<operation_t> steepest_candidate_search(const solution_t &sol) {
     int delta = 0;
@@ -76,10 +76,10 @@ solution_t local_candidates(solution_t solution) {
         }
 
         switch (best_op->type) {
-        case solution_t::REVERSE:
+        case REVERSE:
             solution.reverse(best_op->arg1, best_op->arg2);
             break;
-        case solution_t::REPLACE:
+        case REPLACE:
             solution.replace(best_op->arg1, best_op->arg2);
             break;
         default:
@@ -92,17 +92,4 @@ solution_t local_candidates(solution_t solution) {
     }
 
     return solution;
-}
-
-std::vector<solution_t> solve_local_candidates(const tsp_t &tsp,
-                                               unsigned int n) {
-    std::vector<solution_t> solutions = solve_random(tsp, n);
-    timer_t timer;
-
-    for (int i = 0; i < solutions.size(); i++) {
-        timer.start();
-        solutions[i] = local_candidates(solutions[i]);
-        solutions[i].runtime_ms += timer.measure();
-    }
-    return solutions;
 }

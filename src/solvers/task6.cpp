@@ -4,8 +4,8 @@
 
 #include "../common/random.cpp"
 #include "../common/types.cpp"
-#include "../task3/solve_local_search.cpp"
-#include "../task6/solve_local_multiple.cpp"
+#include "task1.cpp"
+#include "task3.cpp"
 
 // Perturb the solution in-place
 void perturb_solution(solution_t &solution, unsigned int alterations = 10,
@@ -35,17 +35,16 @@ void perturb_solution(solution_t &solution, unsigned int alterations = 10,
     }
 }
 
-solution_t local_search_iterated(const tsp_t &tsp, unsigned int path_size,
-                                 unsigned int time_limit_ms) {
+solution_t local_search_iterated(const tsp_t &tsp, unsigned int time_limit_ms) {
     int best_cost = INT_MAX;
-    solution_t solution = gen_random_solution(tsp, path_size);
+    solution_t solution = gen_random_solution(tsp);
     solution_t best = solution;
     timer_t timer;
 
     timer.start();
     int i = 1;
     while (timer.measure() < time_limit_ms) {
-        solution = solve_local_search(solution, solution_t::REVERSE, STEEPEST);
+        solution = local_search(solution, REVERSE, STEEPEST);
 
         if (solution.cost < best_cost) {
             best_cost = solution.cost;
@@ -60,26 +59,36 @@ solution_t local_search_iterated(const tsp_t &tsp, unsigned int path_size,
     return best;
 }
 
-std::vector<solution_t> solve_local_search_iterated(const tsp_t &tsp,
-                                                    unsigned int path_size) {
-    std::vector<solution_t> mslp_solutions =
-        solve_local_search_multiple_start(tsp, path_size);
-    int time_limit_ms =
-        std::accumulate(mslp_solutions.begin(), mslp_solutions.end(), 0,
-                        [](int val, const solution_t &sol) {
-                            return val + sol.runtime_ms;
-                        }) /
-        mslp_solutions.size();
+solution_t local_search_multiple_start(const tsp_t &tsp) {
+    std::vector<solution_t> solutions = random(tsp);
 
-    std::vector<solution_t> solutions;
-    solutions.reserve(20);
-    timer_t timer;
-    for (unsigned int i = 0; i < 20; i++) {
-        timer.start();
-        solutions.push_back(
-            local_search_iterated(tsp, path_size, time_limit_ms));
-        solutions.back().runtime_ms = timer.measure();
+    for (unsigned int i = 0; i < solutions.size(); i++) {
+        solutions[i] = local_search(solutions[i], REVERSE, STEEPEST);
     }
 
-    return solutions;
+    std::sort(solutions.begin(), solutions.end(),
+              [](const solution_t &s1, const solution_t &s2) {
+                  return s1.cost < s2.cost;
+              });
+    return solutions[0];
+}
+
+unsigned int calc_time_limit_ms(const tsp_t &tsp) {
+    int num_runs = 10;
+    std::vector<solution_t> solutions;
+    solutions.reserve(num_runs);
+    timer_t timer;
+
+    for (int i = 0; i < num_runs; i++) {
+        timer.start();
+        solution_t solution = local_search_multiple_start(tsp);
+        solution.runtime_ms = timer.measure();
+        solutions.push_back(solution);
+    }
+
+    return std::accumulate(solutions.cbegin(), solutions.cend(), 0,
+                           [](int val, const solution_t &sol) {
+                               return val + sol.runtime_ms;
+                           }) /
+           num_runs;
 }

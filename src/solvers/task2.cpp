@@ -10,11 +10,11 @@
 #define REGRET_K 2
 #define REGRET_WEIGHT 0.5
 
-solution_t solve_regret(solution_t solution, unsigned int n, float weight) {
+solution_t greedy_cycle_regret(solution_t solution, float weight) {
     std::vector<pos_delta_t> deltas;
-    deltas.reserve(n);
+    deltas.reserve(solution.tsp->path_size);
 
-    while (solution.path.size() < n) {
+    while (solution.path.size() < solution.tsp->path_size) {
         std::optional<unsigned int> max;
         int max_score = INT_MIN;
         int idx = 0;
@@ -50,16 +50,4 @@ solution_t solve_regret(solution_t solution, unsigned int n, float weight) {
     }
 
     return solution;
-}
-
-solution_t solve_regret_weighted(const tsp_t &tsp, unsigned int n,
-                                 unsigned int start) {
-    solution_t solution(tsp, find_cycle(tsp, start));
-    return solve_regret(solution, n, REGRET_WEIGHT);
-}
-
-solution_t solve_regret_unweighted(const tsp_t &tsp, unsigned int n,
-                                   unsigned int start) {
-    solution_t solution(tsp, find_cycle(tsp, start));
-    return solve_regret(solution, n, 1.0);
 }

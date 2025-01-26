@@ -1,15 +1,12 @@
+#include "../common/types.cpp"
+
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <optional>
 #include <set>
 #include <stack>
 #include <stdexcept>
 #include <unordered_set>
-#include <vector>
-
-#include "../common/types.cpp"
-#include "../task1/solve_random.cpp"
 
 struct oper_info_t {
     int delta;
@@ -293,7 +290,7 @@ steepest_deltas_search(const solution_t &solution, oper_queue_t &oper_pq,
     return convert_info_to_oper(solution, best_op_info.value());
 }
 
-solution_t local_deltas_steepest(const tsp_t &tsp, solution_t solution) {
+solution_t local_deltas(solution_t solution) {
     oper_queue_t oper_pq(solution);
     edge_tracker_t edge_tracker(solution);
 
@@ -325,24 +322,8 @@ solution_t local_deltas_steepest(const tsp_t &tsp, solution_t solution) {
         edge_tracker.update(solution);
         if (!solution.is_valid()) {
             throw std::logic_error("Solution is invalid");
-        } else if (!solution.is_cost_correct()) {
-            throw std::logic_error("Solution cost is incorrect");
         }
     }
 
     return solution;
-}
-
-std::vector<solution_t> solve_local_deltas_steepest_random(const tsp_t &tsp,
-                                                           unsigned n) {
-    std::vector<solution_t> solutions = solve_random(tsp, n);
-    for (int i = 0; i < solutions.size(); i++) {
-        const auto start = std::chrono::high_resolution_clock().now();
-        solutions[i] = local_deltas_steepest(tsp, solutions[i]);
-        solutions[i].runtime_ms +=
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock().now() - start)
-                .count();
-    }
-    return solutions;
 }
