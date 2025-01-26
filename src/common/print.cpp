@@ -9,6 +9,8 @@
 #include <sstream>
 #include <vector>
 
+#define ERROR "\033[0;31m[ERROR]\033[0m"
+
 std::ostream &operator<<(std::ostream &os, const adj_matrix_t matrix) {
     int i = 0;
     for (const auto &row : matrix) {
@@ -62,13 +64,6 @@ std::ostream &operator<<(std::ostream &os,
 
     if (solutions.empty()) {
         return os;
-    }
-
-    os << std::endl << "Solutions:" << std::endl;
-
-    int i = 0;
-    for (const solution_t &solution : solutions) {
-        os << "Solution " << i++ << ":" << std::endl << solution << std::endl;
     }
 
     os << std::endl;
@@ -128,13 +123,26 @@ std::ofstream &operator<<(std::ofstream &os,
     return os;
 }
 
+std::ofstream &operator<<(std::ofstream &os,
+                          const std::vector<similarity_t> sims) {
+    os << "cost,avg_common_edges,avg_common_nodes,best_common_edges,best_"
+          "common_nodes"
+       << std::endl;
+    for (const similarity_t &sim : sims) {
+        os << sim.cost << "," << sim.avg_common_edges << ","
+           << sim.avg_common_nodes << "," << sim.best_common_edges << ","
+           << sim.best_common_nodes << std::endl;
+    }
+    return os;
+}
+
 std::ofstream &operator<<(std::ofstream &os, const operation_t &op) {
     os << "{delta=" << op.delta << ", arg1=" << op.arg1 << ", arg2=" << op.arg2
        << ", type=" << op.type << "}";
     return os;
 }
 
-template <class T> std::string VecToString(const std::vector<T> &v) {
+template <class T> std::string to_string(const std::vector<T> &v) {
     std::stringstream ss;
     ss << "{ ";
     for (unsigned i = 0; i < v.size(); i++) {
