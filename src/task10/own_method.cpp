@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../common/print.cpp"
+#include "../task2/solve_greedy_regret.cpp"
 #include "algorithms.cpp"
+
 #include <cmath>
 #include <iostream>
 
@@ -9,7 +11,7 @@ enum class DestroyNodeSelect { kUniform, kWeighted };
 
 solution_t CustomDestroySolution(const tsp_t &tsp, solution_t sol,
                                  DestroyNodeSelect node_select) {
-    int num_nodes_to_remove = sol.path.size() * 0.25;
+    int num_nodes_to_remove = sol.path.size() * 0.75;
 
     std::vector<int> weights;
     if (node_select == DestroyNodeSelect::kWeighted) {
@@ -41,9 +43,10 @@ void NormalizeDistribution(std::vector<double> &distrib) {
 }
 
 solution_t CustomLNS(const tsp_t &tsp, unsigned int path_size,
-                     unsigned int time_limit_ms, bool ls) {
-    solution_t solution = solve_local_search(
-        gen_random_solution(tsp, path_size), solution_t::REVERSE, STEEPEST);
+                     unsigned int time_limit_ms) {
+    solution_t solution =
+        solve_local_search(tsp, path_size, 0, solution_t::REVERSE, STEEPEST);
+
     solution_t best = solution;
     timer_t timer;
     int i = 1;
@@ -52,7 +55,7 @@ solution_t CustomLNS(const tsp_t &tsp, unsigned int path_size,
         DestroyNodeSelect::kUniform, DestroyNodeSelect::kWeighted};
     std::vector<double> node_select_probs = {1, 1};
 
-    const std::vector<double> regret_weights = {0.1, 0.2, 0.25, 0.3, 0.4};
+    const std::vector<double> regret_weights = {0.1, 0.2, 0.3, 0.4, 0.5};
     std::vector<double> regret_weight_probs = {1, 1, 1, 1, 1};
 
     timer.start();
@@ -66,13 +69,10 @@ solution_t CustomLNS(const tsp_t &tsp, unsigned int path_size,
             solve_regret(solution, path_size,
                          regret_weights[regret_weight_idx]); // Repair solution
 
-        if (ls) {
-            solution =
-                solve_local_search(solution, solution_t::REVERSE, STEEPEST);
-        }
+        solution = solve_local_search(solution, solution_t::REVERSE, STEEPEST);
 
         double delta = solution.cost - best.cost;
-        const double update_coeff = -0.005;
+        const double update_coeff = -0.05;
         if (delta < 0) {
             best = solution;
         }
@@ -88,16 +88,38 @@ solution_t CustomLNS(const tsp_t &tsp, unsigned int path_size,
               << std::endl;
     std::cout << "Final regret_weight_probs: "
               << VecToString(regret_weight_probs) << std::endl;
+    std::cout << "Final best cost: " << best.cost << std::endl;
 
     best.search_iters = i;
     return best;
+}
+
+std::vector<solution_t> solve_custom(const tsp_t &tsp, unsigned int path_size) {
+    std::vector<solution_t> mslp_solutions =
+        solve_local_search_multiple_start(tsp, path_size);
+    int time_limit_ms =
+        std::accumulate(mslp_solutions.begin(), mslp_solutions.end(), 0,
+                        [](int val, const solution_t &sol) {
+                            return val + sol.runtime_ms;
+                        }) /
+        mslp_solutions.size();
+
+    std::vector<solution_t> solutions;
+    solutions.reserve(20);
+    timer_t timer;
+    for (unsigned i = 0; i < 20; i++) {
+        timer.start();
+        solutions.push_back(CustomLNS(tsp, path_size, time_limit_ms));
+        solutions.back().runtime_ms = timer.measure();
+    }
+    return solutions;
 }
 
 class CustomAlgo : public Algorithm {
   public:
     solution_t Run(const tsp_t &tsp, unsigned path_size,
                    unsigned time_limit_ms) const {
-        return CustomLNS(tsp, path_size, time_limit_ms, true);
+        return CustomLNS(tsp, path_size, time_limit_ms);
     }
 
     std::string GetName() { return "CustomAlgo"; }
