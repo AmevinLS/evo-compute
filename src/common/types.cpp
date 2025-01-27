@@ -303,7 +303,14 @@ struct algo_t {
     virtual std::vector<solution_t>
     run(const tsp_t &tsp,
         std::optional<unsigned int> time_limit_ms = std::nullopt) const = 0;
+
     virtual ~algo_t() = default;
+    algo_t() = default;
+    algo_t(const algo_t &other) = default;
+    algo_t(algo_t &&other) = default;
+
+    algo_t &operator=(const algo_t &other) { return *this; }
+    algo_t &operator=(algo_t &&other) { return *this; }
 };
 
 typedef std::pair<unsigned int, int> pos_delta_t;

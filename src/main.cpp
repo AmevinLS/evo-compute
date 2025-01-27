@@ -16,11 +16,11 @@ int main() {
     }
 
     unsigned int time_limit_ms = calc_time_limit_ms(tsp.value());
-    std::vector<std::shared_ptr<algo_t>> algos = {
-        std::make_shared<random_algo>(),
-        std::make_shared<greedy_cycle_regret_weighted_algo>(),
-        std::make_shared<large_neighborhood_search_ls_algo>(),
-        std::make_shared<hybrid_evo_repair_ls_algo>(),
+    std::vector<std::unique_ptr<algo_t>> algos = {
+        std::make_unique<random_algo>(),
+        std::make_unique<greedy_cycle_regret_weighted_algo>(),
+        std::make_unique<large_neighborhood_search_ls_algo>(),
+        std::make_unique<hybrid_evo_repair_ls_algo>(),
     };
 
     return run_experiment(fname, algos, time_limit_ms);

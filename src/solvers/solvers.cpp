@@ -2,6 +2,7 @@
 
 #include "../common/types.cpp"
 #include "task1.cpp"
+#include "task10.cpp"
 #include "task2.cpp"
 #include "task3.cpp"
 #include "task4.cpp"
@@ -44,6 +45,7 @@ std::vector<solution_t> solve_random(const tsp_t &tsp, random_fn_t fn) {
 
     timer_t timer;
     for (unsigned int i = 0; i < solutions.size(); i++) {
+        std::cout << "Solving random " << i << std::endl;
         timer.start();
         solutions[i] = fn(solutions[i]);
         solutions[i].runtime_ms = timer.measure();
@@ -449,35 +451,51 @@ struct hybrid_evo_repair_ls_algo : algo_t {
     }
 };
 
+struct custom_algo : algo_t {
+    std::string short_name() const override { return "custom"; }
+    std::string full_name() const override { return "Custom"; }
+    std::vector<solution_t> run(const tsp_t &tsp,
+                                std::optional<unsigned int> time_limit_ms =
+                                    std::nullopt) const override {
+        return solve_iterated(tsp, custom_lns, time_limit_ms);
+    }
+};
+
 #pragma endregion Algorithms
 
 #pragma region Collections
 
-std::vector<std::shared_ptr<algo_t>> DEFAULT_ALGOS = {
-    std::make_shared<random_algo>(),
-    std::make_shared<nn_end_algo>(),
-    std::make_shared<nn_any_algo>(),
-    std::make_shared<greedy_cycle_algo>(),
-    std::make_shared<greedy_cycle_regret_unweighted_algo>(),
-    std::make_shared<greedy_cycle_regret_weighted_algo>(),
-    std::make_shared<local_search_gen_greedy_swap_algo>(),
-    std::make_shared<local_search_gen_greedy_reverse_algo>(),
-    std::make_shared<local_search_gen_steepest_swap_algo>(),
-    std::make_shared<local_search_gen_steepest_reverse_algo>(),
-    std::make_shared<local_search_random_greedy_swap_algo>(),
-    std::make_shared<local_search_random_greedy_reverse_algo>(),
-    std::make_shared<local_search_random_steepest_swap_algo>(),
-    std::make_shared<local_search_random_steepest_reverse_algo>(),
-    std::make_shared<local_candidates_algo>(),
-    std::make_shared<local_deltas_algo>(),
-    std::make_shared<local_search_multiple_start_algo>(),
-    std::make_shared<local_search_iterated_algo>(),
-    std::make_shared<large_neighborhood_search_no_ls_algo>(),
-    std::make_shared<large_neighborhood_search_ls_algo>(),
-    std::make_shared<hybrid_evo_fill_no_ls_algo>(),
-    std::make_shared<hybrid_evo_fill_ls_algo>(),
-    std::make_shared<hybrid_evo_repair_no_ls_algo>(),
-    std::make_shared<hybrid_evo_repair_ls_algo>(),
-};
+template <typename T, typename... Args> auto make(Args &&...args) {
+    std::vector<T> vec;
+    vec.reserve(sizeof...(Args));
+    (vec.emplace_back(std::forward<Args>(args)), ...);
+    return vec;
+}
+
+std::vector<std::unique_ptr<algo_t>> DEFAULT_ALGOS =
+    make<std::unique_ptr<algo_t>>(
+        std::make_unique<random_algo>(), std::make_unique<nn_end_algo>(),
+        std::make_unique<nn_any_algo>(), std::make_unique<greedy_cycle_algo>(),
+        std::make_unique<greedy_cycle_regret_unweighted_algo>(),
+        std::make_unique<greedy_cycle_regret_weighted_algo>(),
+        std::make_unique<local_search_gen_greedy_swap_algo>(),
+        std::make_unique<local_search_gen_greedy_reverse_algo>(),
+        std::make_unique<local_search_gen_steepest_swap_algo>(),
+        std::make_unique<local_search_gen_steepest_reverse_algo>(),
+        std::make_unique<local_search_random_greedy_swap_algo>(),
+        std::make_unique<local_search_random_greedy_reverse_algo>(),
+        std::make_unique<local_search_random_steepest_swap_algo>(),
+        std::make_unique<local_search_random_steepest_reverse_algo>(),
+        std::make_unique<local_candidates_algo>(),
+        std::make_unique<local_deltas_algo>(),
+        std::make_unique<local_search_multiple_start_algo>(),
+        std::make_unique<local_search_iterated_algo>(),
+        std::make_unique<large_neighborhood_search_no_ls_algo>(),
+        std::make_unique<large_neighborhood_search_ls_algo>(),
+        std::make_unique<hybrid_evo_fill_no_ls_algo>(),
+        std::make_unique<hybrid_evo_fill_ls_algo>(),
+        std::make_unique<hybrid_evo_repair_no_ls_algo>(),
+        std::make_unique<hybrid_evo_repair_ls_algo>(),
+        std::make_unique<custom_algo>());
 
 #pragma endregion Collections

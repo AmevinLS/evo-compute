@@ -6,7 +6,6 @@
 #include <iostream>
 #include <optional>
 #include <ostream>
-#include <sstream>
 #include <vector>
 
 #define ERROR "\033[0;31m[ERROR]\033[0m"
@@ -142,12 +141,12 @@ std::ofstream &operator<<(std::ofstream &os, const operation_t &op) {
     return os;
 }
 
-template <class T> std::string to_string(const std::vector<T> &v) {
-    std::stringstream ss;
-    ss << "{ ";
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> v) {
+    os << "{ ";
     for (unsigned i = 0; i < v.size(); i++) {
-        ss << v[i] << " ";
+        os << v[i] << " ";
     }
-    ss << "}";
-    return ss.str();
+    os << "}";
+    return os;
 }

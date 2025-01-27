@@ -67,10 +67,9 @@ int solve_main(int argc, char **argv) {
 
     if (strcmp(argv[2], "--help") == 0) {
         std::string algos = "";
-        int i = 0;
-        for (auto algo : DEFAULT_ALGOS) {
-            algos += "\"" + algo->short_name() + "\"";
-            if (++i < DEFAULT_ALGOS.size()) {
+        for (int i = 0; i < DEFAULT_ALGOS.size(); i++) {
+            algos += "\"" + DEFAULT_ALGOS[i]->short_name() + "\"";
+            if (i < DEFAULT_ALGOS.size()) {
                 algos += ", ";
             }
         }
@@ -85,7 +84,7 @@ int solve_main(int argc, char **argv) {
     }
 
     std::string fname = argv[2];
-    std::shared_ptr<algo_t> chosen_algo = std::make_shared<random_algo>();
+    int chosen_algo = 0;
 
     int i = 2;
     while (++i < argc) {
@@ -97,9 +96,9 @@ int solve_main(int argc, char **argv) {
             }
 
             bool algo_flag = false;
-            for (auto algo : DEFAULT_ALGOS) {
-                if (argv[i + 1] == algo->short_name()) {
-                    chosen_algo = algo;
+            for (int j = 0; j < DEFAULT_ALGOS.size(); j++) {
+                if (argv[i + 1] == DEFAULT_ALGOS[j]->short_name()) {
+                    chosen_algo = j;
                     algo_flag = true;
                     break;
                 }
@@ -124,7 +123,8 @@ int solve_main(int argc, char **argv) {
         return 1;
     }
 
-    std::vector<solution_t> solutions = chosen_algo->run(tsp.value());
+    std::vector<solution_t> solutions =
+        DEFAULT_ALGOS[chosen_algo]->run(tsp.value());
     std::cout << solutions;
 
     return 0;

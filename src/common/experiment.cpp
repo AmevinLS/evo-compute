@@ -9,7 +9,7 @@
 #include <vector>
 
 int run_experiment(const std::string &fname, const std::string &output_dir,
-                   const std::vector<std::shared_ptr<algo_t>> algorithms,
+                   const std::vector<std::unique_ptr<algo_t>> &algos,
                    unsigned int time_limit_ms) {
     auto tsp = parse(fname);
 
@@ -19,13 +19,13 @@ int run_experiment(const std::string &fname, const std::string &output_dir,
 
     std::string out_path = output_dir + instance_name(fname);
 
-    for (auto algo : algorithms) {
-        std::string path = out_path + "_" + algo->short_name() + ".csv";
-        std::cout << "Running " << algo->full_name()
+    for (int i = 0; i < algos.size(); i++) {
+        std::string path = out_path + "_" + algos[i]->short_name() + ".csv";
+        std::cout << "Running " << algos[i]->full_name()
                   << " heuristic and saving to " << path << "..." << std::endl;
 
         std::vector<solution_t> solutions =
-            algo->run(tsp.value(), time_limit_ms);
+            algos[i]->run(tsp.value(), time_limit_ms);
         std::ofstream out(path);
 
         out << solutions;
@@ -35,7 +35,7 @@ int run_experiment(const std::string &fname, const std::string &output_dir,
 }
 
 int run_experiment(const std::string &fname,
-                   const std::vector<std::shared_ptr<algo_t>> algorithms,
+                   const std::vector<std::unique_ptr<algo_t>> &algos,
                    unsigned int time_limit_ms) {
     auto tsp = parse(fname);
 
@@ -43,10 +43,10 @@ int run_experiment(const std::string &fname,
         return 1;
     }
 
-    for (auto algo : algorithms) {
+    for (int i = 0; i < algos.size(); i++) {
         std::vector<solution_t> solutions =
-            algo->run(tsp.value(), time_limit_ms);
-        std::cout << algo->full_name() << ":\n" << solutions;
+            algos[i]->run(tsp.value(), time_limit_ms);
+        std::cout << algos[i]->full_name() << ":\n" << solutions;
     }
 
     return 0;
