@@ -4,6 +4,7 @@
 #include "task1/solve_greedy_cycle.cpp"
 #include "task1/solve_nn.cpp"
 #include "task1/solve_random.cpp"
+#include "task10/own_method.cpp"
 #include "task2/solve_greedy_regret.cpp"
 #include "task3/solve_local_search.cpp"
 #include "task4/solve_local_candidates.cpp"
@@ -40,7 +41,8 @@ enum heuristic_t {
     HYBRID_EVOLUTIONARY_FILL_NO_LS,
     HYBRID_EVOLUTIONARY_FILL_LS,
     HYBRID_EVOLUTIONARY_REPAIR_NO_LS,
-    HYBRID_EVOLUTIONARY_REPAIR_LS
+    HYBRID_EVOLUTIONARY_REPAIR_LS,
+    CUSTOM
 };
 
 std::map<heuristic_t, std::string> heuristic_t_str = {
@@ -70,7 +72,8 @@ std::map<heuristic_t, std::string> heuristic_t_str = {
     {HYBRID_EVOLUTIONARY_FILL_NO_LS, "hybrid_evolutionary_fill_no_ls"},
     {HYBRID_EVOLUTIONARY_FILL_LS, "hybrid_evolutionary_fill_ls"},
     {HYBRID_EVOLUTIONARY_REPAIR_NO_LS, "hybrid_evolutionary_repair_no_ls"},
-    {HYBRID_EVOLUTIONARY_REPAIR_LS, "hybrid_evolutionary_repair_ls"}};
+    {HYBRID_EVOLUTIONARY_REPAIR_LS, "hybrid_evolutionary_repair_ls"},
+    {CUSTOM, "custom"}};
 
 std::map<heuristic_t, solution_t (*)(const tsp_t &, unsigned int, unsigned int)>
     gen_heuristics_to_fn = {
@@ -110,7 +113,8 @@ std::map<heuristic_t, std::vector<solution_t> (*)(const tsp_t &, unsigned int)>
         {HYBRID_EVOLUTIONARY_FILL_LS, solve_hybrid_evolutionary_fill_ls},
         {HYBRID_EVOLUTIONARY_REPAIR_NO_LS,
          solve_hybrid_evolutionary_repair_no_ls},
-        {HYBRID_EVOLUTIONARY_REPAIR_LS, solve_hybrid_evolutionary_repair_ls}};
+        {HYBRID_EVOLUTIONARY_REPAIR_LS, solve_hybrid_evolutionary_repair_ls},
+        {CUSTOM, solve_custom}};
 
 std::vector<solution_t> solve(const tsp_t &tsp, heuristic_t heuristic) {
     std::vector<solution_t> solutions;
